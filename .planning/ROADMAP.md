@@ -94,8 +94,8 @@ Plans:
 - [x] 02-04-PLAN.md — Zod schema unit tests at tests/rules/ covering all 17 rule_kinds + dispatch table exhaustiveness + FNMA SC#2 fixture (SCH-04/SCH-05/SCH-06/SCH-07/SCH-10)
 
 **Wave 2** *(blocked on Wave 1; plans sequential)*
-- [ ] 02-05-PLAN.md — drizzle-kit generate 0002_program_and_agency_schema + --custom 0003_force_rls_program + 0006_force_rls_agency (FORCE on 5 tenant-scoped tables; GRANTs on agency tables)
-- [ ] 02-06-PLAN.md — --custom 0004_program_constraints (btree_gist + EXCLUDE on program_version + agency_rule_version + jsonb_min_numeric wrapper + min_confidence STORED + CHECKs + partial expression index) + 0007_detect_loosenings function
+- [x] 02-05-PLAN.md — drizzle-kit generate 0002_program_and_agency_schema + --custom 0003_force_rls_program + 0006_force_rls_agency (FORCE on 5 tenant-scoped tables; GRANTs on agency tables)
+- [x] 02-06-PLAN.md — --custom 0004_program_constraints (btree_gist + EXCLUDE on program_version + agency_rule_version + jsonb_min_numeric wrapper + min_confidence STORED + CHECKs + partial expression index) + 0007_detect_loosenings function
 
 **Wave 3** *(blocked on Wave 2; sequential gate then parallel)*
 - [ ] 02-07-PLAN.md — [BLOCKING] pnpm db:reset + drizzle-kit migrate + psql introspection asserting FORCE / pg_proc / pg_extension / GENERATED columns / CHECKs / EXCLUDE / partial indexes
@@ -283,7 +283,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
-| 2. Rule Schema | 4/9 | In Progress|  |
+| 2. Rule Schema | 6/9 | In Progress|  |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
 | 5. Golden Set + Phase 0 Exit Gates | 0/TBD | Not started | - |
