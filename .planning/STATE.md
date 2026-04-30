@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 01-07-PLAN.md (D-03 coverage matrix — 6 pen-test files at tests/rls/; pnpm test:rls 27/27 in 665ms)"
-last_updated: "2026-04-30T14:56:50.461Z"
+stopped_at: Completed 01-08-PLAN.md (Phase 1 structurally complete — eslint flat config + GitHub Actions CI + README PR gate; checkpoint auto-approved per --auto; 5/5 Phase 1 must-haves verified green)
+last_updated: "2026-04-30T15:10:40.535Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 7 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Plan: 8 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -58,6 +58,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 01 P05 | 4 min | 2 tasks | 6 files |
 | Phase 01 P06 | ~6 min | 5 tasks tasks | 6 files files |
 | Phase 01 P07 | ~7 min | 3 tasks tasks | 6 files files |
+| Phase 01 P08 | 6 min | 4 tasks tasks | 8 files files |
 
 ## Accumulated Context
 
@@ -93,6 +94,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-07: connectAsAnonymous switched to fresh pg.Client (NOT pool.connect()) — Postgres 16 placeholder GUCs once touched stay as '' rather than NULL after RESET/DISCARD ALL, so the only path that yields current_setting=NULL for the 'unset GUC → 0 rows' assertion is a session that never touched the GUC. Plan 06's recommended option 1 (RESET app.tenant_id) was empirically refuted; option 2 (fresh client) chosen. Phase 6 withTenantContext should match this semantic — either fresh client per request or always set_config at request start
 - [Phase 01]: Plan 01-07: GUC-reset test asserts matches_a===false (the value set by set_config did NOT survive ROLLBACK), accepting both NULL and '' as fail-closed outcomes. Original RESEARCH §Pattern 4 / Plan 07 verbatim snippet asserted toBeNull() — strictly impossible in Postgres 16 on a touched-then-rolled-back session. Corrected assertion preserves the same security property (no value leak) while honest about Postgres semantics
 - [Phase 01]: Plan 01-07: TDD RED+GREEN folded into single commits per task — system under test (RLS+FORCE+policies+index) was already built in Plans 04-05, so writing the same test twice (once expecting fail, once expecting pass) is theater. Each commit message says 'RED+GREEN' to make the folding explicit. Structural value of the tests is the regression gate, not simulated red-then-green progression
+- [Phase 01]: Plan 01-08: Resolved typescript-eslint peer-dep mismatch by bumping 8.46.0 → 8.59.1 (peer accepts eslint@^10.0.0). Bumping the analyzer is preferred over downgrading ESLint 10 → 9; minor-version step within typescript-eslint 8.x with no breaking changes in rules used; pnpm install --frozen-lockfile resolves with zero peer warnings.
+- [Phase 01]: Plan 01-08: Forward-looking ESLint rule pattern — ship the rule before the surface it guards exists, with a smoke fixture (app/.eslint-fixture.ts) that proves the rule fires today via inverted-exit-code lint:fixture script. Phase 6's first app/ PR is auto-gated on no-restricted-properties (process.env) + no-restricted-imports (service-role*/admin-db*) without anyone having to remember to add the rule.
+- [Phase 01]: Plan 01-08: lib/tenant/context.ts uses block-disable @typescript-eslint/no-explicit-any with rationale comment instead of refactoring the PgDatabase<any,any,any> | PgTransaction<any,any,any> union types. The any triplets are a deliberate forward-compat seam (Plan 03 decision: Phase 6's withTenantContext consumes the helper unchanged); refactoring would either narrow the helper to one caller or add three new generic params for no value.
+- [Phase 01]: Plan 01-08: Auto-approval under --auto orchestration — config.workflow.auto_advance=true triggered the auto-approve path for the human-verify checkpoint. Re-ran all 5 Phase 1 must-haves locally (typecheck exit 0; test:rls 27/27 in 657ms; lint exit 0; lint:fixture exit 0 with 2 errors firing; psql introspection t|t for both tables) and captured green output in SUMMARY before continuing. Manual push + watch-CI + intentional-regression demonstration deferred to user discretion post-execution.
 
 ### Pending Todos
 
@@ -115,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:56:50.459Z
-Stopped at: Completed 01-07-PLAN.md (D-03 coverage matrix — 6 pen-test files at tests/rls/; pnpm test:rls 27/27 in 665ms)
+Last session: 2026-04-30T15:10:40.532Z
+Stopped at: Completed 01-08-PLAN.md (Phase 1 structurally complete — eslint flat config + GitHub Actions CI + README PR gate; checkpoint auto-approved per --auto; 5/5 Phase 1 must-haves verified green)
 Resume file: None

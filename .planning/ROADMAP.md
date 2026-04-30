@@ -60,7 +60,7 @@ Plans:
 - [x] 01-07-PLAN.md — Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
 
 **Wave 4** *(blocked on Wave 3)*
-- [ ] 01-08-PLAN.md — ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint
+- [x] 01-08-PLAN.md — ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint
 
 **Cross-cutting constraints** *(truths shared across 2+ plans):*
 - Tenant filtering is database-enforced via RLS, never application-layer
