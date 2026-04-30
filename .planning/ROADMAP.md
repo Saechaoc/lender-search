@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 
 **Wave 0** *(blocks all later waves)*
-- [ ] 01-01-PLAN.md — Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user)
+- [x] 01-01-PLAN.md — Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user) *(2026-04-29)*
 
 **Wave 1** *(blocked on Wave 0; plans run in parallel)*
 - [ ] 01-02-PLAN.md — t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
@@ -255,7 +255,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Tenant Isolation Foundation | 0/TBD | Not started | - |
+| 1. Tenant Isolation Foundation | 1/8 | In Progress | - |
 | 2. Rule Schema | 0/TBD | Not started | - |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
