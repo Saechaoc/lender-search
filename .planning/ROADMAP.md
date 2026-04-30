@@ -81,7 +81,34 @@ Plans:
   3. A `program_version` row carries an `effective_period daterange` and a content-addressed `source_document_fingerprint`; two overlapping active versions for the same program cannot coexist (`EXCLUDE USING gist` exclusion constraint)
   4. Inserting an `INVESTOR_OVERLAY` rule that loosens a corresponding `AGENCY_BASE` rule surfaces as a data-quality error (loosening rejection)
   5. Every `program_rule` field carries a `confidence numeric (0-1)`; `IncomeDocMethod` and `DscrMethod` are typed objects (not flat labels) and persist per-program
-**Plans**: TBD
+**Plans**: 9 plans across 4 waves
+
+Plans:
+
+**Wave 0** *(blocks all later waves)*
+- [ ] 02-01-PLAN.md — daterange customType + system_role pgRole + scripts/init-db.sh extension + 17 lib/rules/schemas Zod schemas + dispatch table + vitest.schema.config.ts + test:schema script
+
+**Wave 1** *(blocked on Wave 0; plans run in parallel)*
+- [ ] 02-02-PLAN.md — db/schema TS for program/program_version/program_rule/rule_citation tables + index barrel extension (SCH-01/SCH-09/SCH-10/SCH-11/SCH-12/SCH-13/SCH-14)
+- [ ] 02-03-PLAN.md — db/schema TS for agency_rule_version/agency_rule/lender_overlay_rule tables + system_role policies + index barrel extension (SCH-01/SCH-04/SCH-09/SCH-10/SCH-13)
+- [ ] 02-04-PLAN.md — Zod schema unit tests at tests/rules/ covering all 17 rule_kinds + dispatch table exhaustiveness + FNMA SC#2 fixture (SCH-04/SCH-05/SCH-06/SCH-07/SCH-10)
+
+**Wave 2** *(blocked on Wave 1; plans sequential)*
+- [ ] 02-05-PLAN.md — drizzle-kit generate 0002_program_and_agency_schema + --custom 0003_force_rls_program + 0006_force_rls_agency (FORCE on 5 tenant-scoped tables; GRANTs on agency tables)
+- [ ] 02-06-PLAN.md — --custom 0004_program_constraints (btree_gist + EXCLUDE on program_version + agency_rule_version + jsonb_min_numeric wrapper + min_confidence STORED + CHECKs + partial expression index) + 0007_detect_loosenings function
+
+**Wave 3** *(blocked on Wave 2; sequential gate then parallel)*
+- [ ] 02-07-PLAN.md — [BLOCKING] pnpm db:reset + drizzle-kit migrate + psql introspection asserting FORCE / pg_proc / pg_extension / GENERATED columns / CHECKs / EXCLUDE / partial indexes
+- [ ] 02-08-PLAN.md — tests/schema/ structural test suite (D-20 #1-#8 + D-10 min_confidence + SCH-01 layer enum) — 9 tests + setup + seed fixture
+- [ ] 02-09-PLAN.md — tests/rls/ pen-test extension (D-19) — 5 cross-tenant tests covering Phase 1 D-03 matrix on the 5 new tenant-scoped tables + seedTwoTenants extension + global-setup TRUNCATE/GRANT extension
+
+**Cross-cutting constraints** *(truths shared across 2+ plans):*
+- Phase 1 patterns reused unchanged: NodeNext .js extensions; .env.local-first dotenv ordering; vitest pool: 'forks'; canonical RLS predicate `current_setting('app.tenant_id', true)::uuid`; `--custom` migrations for FORCE/EXCLUDE/SQL functions
+- ruleKind pgEnum literal in db/schema/program-rule.ts MUST match lib/rules/schemas/index.ts ruleKinds tuple verbatim (D-09 17 values, same order)
+- agency_rule_version + agency_rule are NOT tenant-scoped; cross-tenant readability via two-policy shape (world_read SELECT + system_role write)
+- jsonb_min_numeric IMMUTABLE wrapper resolves Pitfall C (Postgres rejects subquery in GENERATED expression)
+- Phase 2 stays strictly schema-only; Phase 3 owns FNMA/FHLMC/FHA/VA hand-authoring (AGY-01..09)
+
 **UI hint**: no
 
 ### Phase 3: Audit Log + Agency Rule Encoding
@@ -256,7 +283,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
-| 2. Rule Schema | 0/TBD | Not started | - |
+| 2. Rule Schema | 0/9 | Not started | - |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
 | 5. Golden Set + Phase 0 Exit Gates | 0/TBD | Not started | - |
