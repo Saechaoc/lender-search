@@ -98,8 +98,8 @@ Plans:
 - [x] 02-06-PLAN.md — --custom 0004_program_constraints (btree_gist + EXCLUDE on program_version + agency_rule_version + jsonb_min_numeric wrapper + min_confidence STORED + CHECKs + partial expression index) + 0007_detect_loosenings function
 
 **Wave 3** *(blocked on Wave 2; sequential gate then parallel)*
-- [ ] 02-07-PLAN.md — [BLOCKING] pnpm db:reset + drizzle-kit migrate + psql introspection asserting FORCE / pg_proc / pg_extension / GENERATED columns / CHECKs / EXCLUDE / partial indexes
-- [ ] 02-08-PLAN.md — tests/schema/ structural test suite (D-20 #1-#8 + D-10 min_confidence + SCH-01 layer enum) — 9 tests + setup + seed fixture
+- [x] 02-07-PLAN.md — [BLOCKING] pnpm db:reset + drizzle-kit migrate + psql introspection asserting FORCE / pg_proc / pg_extension / GENERATED columns / CHECKs / EXCLUDE / partial indexes
+- [x] 02-08-PLAN.md — tests/schema/ structural test suite (D-20 #1-#8 + D-10 min_confidence + SCH-01 layer enum) — 9 tests + setup + seed fixture
 - [ ] 02-09-PLAN.md — tests/rls/ pen-test extension (D-19) — 5 cross-tenant tests covering Phase 1 D-03 matrix on the 5 new tenant-scoped tables + seedTwoTenants extension + global-setup TRUNCATE/GRANT extension
 
 **Cross-cutting constraints** *(truths shared across 2+ plans):*
@@ -283,7 +283,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
-| 2. Rule Schema | 6/9 | In Progress|  |
+| 2. Rule Schema | 8/9 | In Progress|  |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
 | 5. Golden Set + Phase 0 Exit Gates | 0/TBD | Not started | - |
