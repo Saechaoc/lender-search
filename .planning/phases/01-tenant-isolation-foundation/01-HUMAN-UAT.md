@@ -1,29 +1,43 @@
 ---
-status: partial
+status: testing
 phase: 01-tenant-isolation-foundation
 source: [01-VERIFICATION.md]
 started: 2026-04-30T15:10:00Z
-updated: 2026-04-30T15:30:00Z
+updated: 2026-04-30T15:45:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 2
+name: Demonstrate CI catches a deliberate regression
+expected: |
+  Mutate `expect(rows).toHaveLength(0)` → `1` in `tests/rls/cross-tenant-select.test.ts`, push, see CI red on `pnpm test:rls`, revert, see CI green again.
+awaiting: user response
 
 ## Tests
 
 ### 1. Push branch + observe GitHub Actions CI run green
 expected: All 11 steps in `.github/workflows/ci.yml` pass — checkout → pnpm + Node setup → install → provision app_user → typecheck → lint → lint:fixture → migrate + GRANT → FORCE RLS gate → `pnpm test:rls` (27/27 expected). Local smoke replicates the workflow exactly and runs in 657ms; remote run on real GitHub Actions infrastructure is the missing observation.
-result: issue
-reported: "Error: Multiple versions of pnpm specified: version 9 in the GitHub Action config with the key 'version' AND version pnpm@9.15.0 in the package.json with the key 'packageManager'. Remove one of these versions. (pnpm/action-setup@v4 errored at install step before any tests could run.)"
-severity: blocker
-how-to-test: `git push` (or open a PR) and watch the Actions tab. The workflow runs on `pull_request` and `push to main`.
+result: pass
+verified: 2026-04-30T15:50:00Z (after fixes e98f115 + d2b6eb6)
+prior_attempts:
+  - timestamp: 2026-04-30T15:25:00Z
+    result: issue (blocker)
+    reason: "pnpm/action-setup@v4 errored — duplicate version sources in workflow + package.json"
+    fix_commit: e98f115
+  - timestamp: 2026-04-30T15:35:00Z
+    result: issue (blocker, surfaced in next CI step)
+    reason: "FORCE RLS gate grep mismatched boolean rendering — `||` cast bool to `true`/`false` while grep matched `t`/`f`"
+    fix_commit: d2b6eb6
+how-to-test: `git push` (already done — both fixes on origin/main). Watch the Actions tab.
 
 ### 2. Demonstrate CI catches a deliberate regression
 expected: Temporarily mutate `expect(rows).toHaveLength(0)` → `1` in `tests/rls/cross-tenant-select.test.ts`, push, confirm CI turns red on `pnpm test:rls`, revert the mutation, confirm CI turns green again. This proves the merge gate actually blocks bad commits — not just that the workflow runs.
-result: blocked
-blocked_by: prior-test
-reason: "User reported: 'Skip blocked by test 1' — CI install step fails before any test step can run; cannot demonstrate regression catch until Test 1's pnpm/action-setup config conflict is resolved."
+result: [pending]
+prior_attempts:
+  - timestamp: 2026-04-30T15:30:00Z
+    result: blocked (prior-test)
+    reason: "Test 1 install step failed; couldn't reach test step"
 how-to-test: One-off branch with the mutation; push; observe red CI; revert + push; observe green.
 
 ### 3. Configure branch protection on `main` to require CI / verify
@@ -35,11 +49,12 @@ how-to-test: GitHub repo-admin operation outside the codebase. Settings → Bran
 ## Summary
 
 total: 3
-passed: 0
-issues: 1
-pending: 0
+passed: 1
+issues: 0
+pending: 1
 skipped: 1
-blocked: 1
+blocked: 0
+notes: "Test 1 confirmed pass on real GitHub Actions after fixes e98f115 + d2b6eb6."
 
 ## Gaps
 

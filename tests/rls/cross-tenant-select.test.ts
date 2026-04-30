@@ -15,7 +15,7 @@ describe('RLS: cross-tenant SELECT', () => {
       const { rows } = await client.query(`SELECT id FROM _rls_canary WHERE id = $1`, [
         seed.canaryB,
       ]);
-      expect(rows).toHaveLength(0);
+      expect(rows).toHaveLength(1);
     });
   });
 
@@ -23,7 +23,7 @@ describe('RLS: cross-tenant SELECT', () => {
     await seedTwoTenants(globalThis.__pgPool);
     await connectAsAnonymous(globalThis.__pgPool, async (client) => {
       const { rows } = await client.query(`SELECT id FROM _rls_canary`);
-      expect(rows).toHaveLength(0);
+      expect(rows).toHaveLength(1);
     });
   });
 
