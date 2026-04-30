@@ -18,9 +18,16 @@
  *
  * Connects as `app_user` (NOBYPASSRLS NOSUPERUSER) so RLS is meaningful.
  */
-import 'dotenv/config';
+import { config as loadDotenv } from 'dotenv';
 import { Pool } from 'pg';
 import { afterAll, beforeAll } from 'vitest';
+
+// Load .env.local first (local-dev secrets; gitignored), then fall back to .env.
+// Same pattern drizzle.config.ts + global-setup.ts use (Plan 01-05 deviation fix).
+// dotenv does not override pre-set env vars, so CI's GitHub Actions secrets take
+// precedence over committed dotfiles.
+loadDotenv({ path: '.env.local' });
+loadDotenv({ path: '.env' });
 
 declare global {
   // eslint-disable-next-line no-var

@@ -18,8 +18,16 @@
  * arguments here are pinned literals so injection is not feasible, but
  * execFile is the safer default.
  */
+import { config as loadDotenv } from 'dotenv';
 import { Client } from 'pg';
 import { execFileSync } from 'node:child_process';
+
+// Load .env.local first (local-dev secrets; gitignored), then fall back to .env.
+// Same pattern drizzle.config.ts uses (Plan 01-05 deviation fix). dotenv does not
+// override pre-set env vars, so CI's GitHub Actions secrets take precedence over
+// committed dotfiles.
+loadDotenv({ path: '.env.local' });
+loadDotenv({ path: '.env' });
 
 // Use the postgres-superuser DATABASE_URL for migrations + grants.
 // The default DATABASE_URL (in .env.local) connects as app_user, which is
