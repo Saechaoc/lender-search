@@ -24,3 +24,20 @@ yarn-error.log*
 .gitnexus
 .claude/
 .serena/
+
+# TypeScript build output
+dist/
+*.tsbuildinfo
+
+# Next.js (forward-looking; arrives Phase 6)
+.next/
+out/
+
+# Turborepo (forward-looking)
+.turbo/
+
+# Vitest cache
+.vitest/
+
+# pnpm
+.pnpm-store/
