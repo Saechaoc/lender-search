@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-05-PLAN.md (FORCE RLS custom migration applied; pg_class.relforcerowsecurity=t for tenant+_rls_canary)
-last_updated: "2026-04-30T14:31:46.009Z"
+stopped_at: "Completed 01-06-PLAN.md (pen-test harness — 5 files at tests/rls/; pnpm test:rls 8/8 passing)"
+last_updated: "2026-04-30T14:44:18.115Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
   completed_phases: 0
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 5 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Plan: 6 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 01 P03 | ~10 min | 2 tasks | 2 files |
 | Phase 01 P04 | 3 min | 3 tasks | 6 files |
 | Phase 01 P05 | 4 min | 2 tasks | 6 files |
+| Phase 01 P06 | ~6 min | 5 tasks tasks | 6 files files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-05: drizzle.config.ts now loads .env.local first, then .env; DATABASE_MIGRATION_URL (postgres superuser) preferred with DATABASE_URL (app_user) fallback. Two-connection-string pattern means migrations use the table-owner role (only postgres can ALTER FORCE) while runtime + pen tests use app_user (NOBYPASSRLS NOSUPERUSER) so FORCE RLS is meaningful
 - [Phase 01]: Plan 01-05: Post-migrate GRANT step required after drizzle-kit migrate creates tables owned by postgres — init-db.sh's ALTER DEFAULT PRIVILEGES covers FUTURE tables but not the ones created during the migrate. Plan 08 CI workflow must run GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE tenant,_rls_canary TO app_user after pnpm drizzle-kit migrate
 - [Phase 01]: Plan 01-05: pg_class.relforcerowsecurity = t verified for tenant + _rls_canary via psql introspection — TNT-01 structurally complete. Plan 06 pen-test setup.ts beforeAll asserts the same; Plan 07 pen tests rely on FORCE so even superuser table owner is subject to policy
+- [Phase 01]: Plan 01-06: Pen-test harness landed (5 files at tests/rls/) — globalSetup runs drizzle-kit migrate via execFileSync + GRANTs DML to app_user; setup.ts beforeAll asserts BYPASSRLS=false + relforcerowsecurity=true + tenant_self_filter+canary_tenant_isolation policies present; jose mintJWT/forgeJWT/extractTenantIdFromJWT (HS256, Supabase shape); seedTwoTenants implements Pitfall-7 bootstrap (gen_random_uuid → set_config → INSERT) via app_user; connectAsTenant/connectAsAnonymous transactional wrappers with is_local=true. Smoke run: pnpm test:rls 8/8 in 596ms.
+- [Phase 01]: Plan 01-06: [Rule 3 deviation] global-setup.ts AND setup.ts both needed explicit loadDotenv({path: '.env.local'}) — Vitest 4 globalSetup and setupFiles run in DISTINCT module contexts; the side-effect  (loads .env only) doesn't cross between them. Mirrors drizzle.config.ts's pattern (Plan 05 deviation fix). CI's GitHub Actions secrets still take precedence (dotenv won't override pre-set env vars).
+- [Phase 01]: Plan 01-06: connectAsAnonymous + pool-reused connection raises 22P02 invalid uuid syntax (empty-string GUC) instead of returning 0 rows — Postgres placeholder GUCs persist as '' on the session after set_config+ROLLBACK on a pooled connection. Plan 07 must add RESET app.tenant_id at start of connectAsAnonymous OR use a fresh pg.Client OR update test expectation to 'cast raises 22P02' (also fail-closed). Documented in 01-06-SUMMARY §Phase 7 Findings.
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:31:46.007Z
-Stopped at: Completed 01-05-PLAN.md (FORCE RLS custom migration applied; pg_class.relforcerowsecurity=t for tenant+_rls_canary)
+Last session: 2026-04-30T14:44:18.112Z
+Stopped at: Completed 01-06-PLAN.md (pen-test harness — 5 files at tests/rls/; pnpm test:rls 8/8 passing)
 Resume file: None

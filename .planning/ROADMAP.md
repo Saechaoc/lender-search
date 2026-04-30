@@ -56,7 +56,7 @@ Plans:
 - [x] 01-05-PLAN.md — `--custom` 0001_force_rls.sql migration + [BLOCKING] `drizzle-kit migrate` against docker Postgres
 
 **Wave 3** *(blocked on Wave 2; plans sequential)*
-- [ ] 01-06-PLAN.md — Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
+- [x] 01-06-PLAN.md — Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
 - [ ] 01-07-PLAN.md — Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
 
 **Wave 4** *(blocked on Wave 3)*
