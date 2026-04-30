@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md (TS schema + drizzle-kit generate)
-last_updated: "2026-04-30T14:22:52.760Z"
+stopped_at: Completed 01-05-PLAN.md (FORCE RLS custom migration applied; pg_class.relforcerowsecurity=t for tenant+_rls_canary)
+last_updated: "2026-04-30T14:31:46.009Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
   completed_phases: 0
   total_plans: 8
-  completed_plans: 4
-  percent: 50
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 4 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Plan: 5 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -55,6 +55,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 01 P02 | 4 min | 2 tasks | 3 files |
 | Phase 01 P03 | ~10 min | 2 tasks | 2 files |
 | Phase 01 P04 | 3 min | 3 tasks | 6 files |
+| Phase 01 P05 | 4 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-04: NodeNext .js extensions on relative imports in db/schema/canary.ts and db/schema/index.ts (TS2835 — same constraint Plan 01-02/03 hit; the plan's verbatim RESEARCH §Pattern 1 snippet predated NodeNext)
 - [Phase 01]: Plan 01-04: drizzle.config.ts loads .env (not .env.local) — workaround was inline DATABASE_URL=... pnpm drizzle-kit generate; flagged for Plan 05 to fix (load .env.local first)
 - [Phase 01]: Plan 01-04: Generated 0000_initial.sql byte-matches RESEARCH §Pattern 1 expectations (Assumption A1 validated empirically); zero FORCE ROW LEVEL SECURITY clauses by design (Plan 05 owns FORCE via --custom)
+- [Phase 01]: Plan 01-05: drizzle.config.ts now loads .env.local first, then .env; DATABASE_MIGRATION_URL (postgres superuser) preferred with DATABASE_URL (app_user) fallback. Two-connection-string pattern means migrations use the table-owner role (only postgres can ALTER FORCE) while runtime + pen tests use app_user (NOBYPASSRLS NOSUPERUSER) so FORCE RLS is meaningful
+- [Phase 01]: Plan 01-05: Post-migrate GRANT step required after drizzle-kit migrate creates tables owned by postgres — init-db.sh's ALTER DEFAULT PRIVILEGES covers FUTURE tables but not the ones created during the migrate. Plan 08 CI workflow must run GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE tenant,_rls_canary TO app_user after pnpm drizzle-kit migrate
+- [Phase 01]: Plan 01-05: pg_class.relforcerowsecurity = t verified for tenant + _rls_canary via psql introspection — TNT-01 structurally complete. Plan 06 pen-test setup.ts beforeAll asserts the same; Plan 07 pen tests rely on FORCE so even superuser table owner is subject to policy
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:22:42.925Z
-Stopped at: Completed 01-04-PLAN.md (TS schema + drizzle-kit generate)
+Last session: 2026-04-30T14:31:46.007Z
+Stopped at: Completed 01-05-PLAN.md (FORCE RLS custom migration applied; pg_class.relforcerowsecurity=t for tenant+_rls_canary)
 Resume file: None
