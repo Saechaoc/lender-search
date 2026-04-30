@@ -15,7 +15,7 @@ describe('RLS: cross-tenant SELECT', () => {
       const { rows } = await client.query(`SELECT id FROM _rls_canary WHERE id = $1`, [
         seed.canaryB,
       ]);
-      expect(rows).toHaveLength(1);
+      expect(rows).toHaveLength(0);
     });
   });
 
@@ -33,7 +33,7 @@ describe('RLS: cross-tenant SELECT', () => {
       const { rows } = await client.query<{ id: string }>(
         `SELECT id::text AS id FROM _rls_canary`,
       );
-      expect(rows).toHaveLength(0);
+      expect(rows).toHaveLength(1);
       expect(rows[0]!.id).toBe(seed.canaryA);
     });
   });
