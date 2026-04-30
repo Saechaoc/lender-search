@@ -14,11 +14,16 @@
  *     expect(rows).toHaveLength(1);  // sees only A's canary
  *   });
  *
- * connectAsAnonymous — same as connectAsTenant but does NOT set the GUC.
- * Asserts that without a tenant context, current_setting(..., true) is NULL,
- * so RLS policies fail and zero rows return.
+ * connectAsAnonymous — opens a FRESH pg.Client (NOT from the pool) so no
+ * prior `set_config('app.tenant_id', ...)` call has touched this session.
+ * `current_setting('app.tenant_id', true)` returns NULL → RLS policies fail
+ * closed → zero rows. (Postgres 16 quirk: once a placeholder GUC has been
+ * touched in a session, RESET / DISCARD ALL leave it as the empty string
+ * '' rather than NULL, so the cast `''::uuid` raises 22P02. A fresh client
+ * has never touched it, so the missing-ok variant of current_setting
+ * returns NULL cleanly. See Plan 06 SUMMARY §Phase 7 Findings.)
  */
-import type { Pool, PoolClient } from 'pg';
+import { Client, type Pool, type PoolClient } from 'pg';
 
 export async function connectAsTenant<T>(
   pool: Pool,
@@ -47,26 +52,43 @@ export async function connectAsTenant<T>(
   }
 }
 
+/**
+ * Open a fresh pg.Client (not pooled) so no prior session state — no prior
+ * `set_config('app.tenant_id', ...)` — exists. The placeholder GUC has never
+ * been touched in this session, so `current_setting('app.tenant_id', true)`
+ * (missing-ok variant) returns NULL → policy fails closed → zero rows.
+ *
+ * The callback receives a `Client` (compatible with PoolClient at the query()
+ * surface used by tests). Tests should not call `client.release()` — this
+ * helper owns the connection lifecycle and `end()`s the fresh client itself.
+ */
 export async function connectAsAnonymous<T>(
   pool: Pool,
-  fn: (client: PoolClient) => Promise<T>,
+  fn: (client: Client) => Promise<T>,
 ): Promise<T> {
-  const client = await pool.connect();
+  // Reuse the pool's connection-string config so this helper is parameterized
+  // the same way the rest of the harness is. `pool.options` is the pg.Pool
+  // option bag (connectionString or host/port/db/user/pwd).
+  const opts = (pool as unknown as { options: Record<string, unknown> }).options ?? {};
+  const fresh = new Client(opts as ConstructorParameters<typeof Client>[0]);
+  await fresh.connect();
   try {
-    await client.query('BEGIN');
-    // Intentionally do NOT call set_config. current_setting('app.tenant_id', true)
-    // returns NULL → RLS policies fail closed → zero rows.
-    const result = await fn(client);
-    await client.query('ROLLBACK');
+    await fresh.query('BEGIN');
+    // Intentionally do NOT call set_config. On this never-before-used session,
+    // current_setting('app.tenant_id', true) returns NULL (not '') → RLS
+    // policies fail closed → zero rows. See file header for the Postgres 16
+    // placeholder-GUC quirk this works around.
+    const result = await fn(fresh);
+    await fresh.query('ROLLBACK');
     return result;
   } catch (err) {
     try {
-      await client.query('ROLLBACK');
+      await fresh.query('ROLLBACK');
     } catch {
-      /* swallow */
+      /* swallow — transaction may already be aborted */
     }
     throw err;
   } finally {
-    client.release();
+    await fresh.end();
   }
 }
