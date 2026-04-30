@@ -257,17 +257,153 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Empty initially. Populated by gsd-roadmapper during roadmap creation.
+Populated by gsd-roadmapper during roadmap creation. Each REQ-ID maps to exactly one roadmap phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _to be populated by roadmap_ | _ | _ |
+| SCH-01 | Phase 2 | Not started |
+| SCH-02 | Phase 2 | Not started |
+| SCH-03 | Phase 2 | Not started |
+| SCH-04 | Phase 2 | Not started |
+| SCH-05 | Phase 2 | Not started |
+| SCH-06 | Phase 2 | Not started |
+| SCH-07 | Phase 2 | Not started |
+| SCH-08 | Phase 2 | Not started |
+| SCH-09 | Phase 2 | Not started |
+| SCH-10 | Phase 2 | Not started |
+| SCH-11 | Phase 2 | Not started |
+| SCH-12 | Phase 2 | Not started |
+| SCH-13 | Phase 2 | Not started |
+| SCH-14 | Phase 2 | Not started |
+| AGY-01 | Phase 3 | Not started |
+| AGY-02 | Phase 3 | Not started |
+| AGY-03 | Phase 3 | Not started |
+| AGY-04 | Phase 3 | Not started |
+| AGY-05 | Phase 3 | Not started |
+| AGY-06 | Phase 3 | Not started |
+| AGY-07 | Phase 3 | Not started |
+| AGY-08 | Phase 3 | Not started |
+| AGY-09 | Phase 3 | Not started |
+| EVL-01 | Phase 4 | Not started |
+| EVL-02 | Phase 4 | Not started |
+| EVL-03 | Phase 4 | Not started |
+| EVL-04 | Phase 4 | Not started |
+| EVL-05 | Phase 4 | Not started |
+| EVL-06 | Phase 4 | Not started |
+| EVL-07 | Phase 4 | Not started |
+| EVL-08 | Phase 4 | Not started |
+| EVL-09 | Phase 4 | Not started |
+| TNT-01 | Phase 1 | Not started |
+| TNT-02 | Phase 1 | Not started |
+| TNT-03 | Phase 1 | Not started |
+| TNT-04 | Phase 1 | Not started |
+| TNT-05 | Phase 1 | Not started |
+| TNT-06 | Phase 1 | Not started |
+| AUD-01 | Phase 3 | Not started |
+| AUD-02 | Phase 3 | Not started |
+| AUD-03 | Phase 3 | Not started |
+| AUD-04 | Phase 3 | Not started |
+| GLD-01 | Phase 5 | Not started |
+| GLD-02 | Phase 5 | Not started |
+| GLD-03 | Phase 5 | Not started |
+| GLD-04 | Phase 5 | Not started |
+| GLD-05 | Phase 5 | Not started |
+| GLD-06 | Phase 5 | Not started |
+| EXT-01 | Phase 7 | Not started |
+| EXT-02 | Phase 7 | Not started |
+| EXT-03 | Phase 7 | Not started |
+| EXT-04 | Phase 7 | Not started |
+| EXT-05 | Phase 7 | Not started |
+| EXT-06 | Phase 7 | Not started |
+| EXT-07 | Phase 7 | Not started |
+| EXT-08 | Phase 7 | Not started |
+| EXT-09 | Phase 7 | Not started |
+| EXT-10 | Phase 7 | Not started |
+| AM-01 | Phase 8 | Not started |
+| AM-02 | Phase 8 | Not started |
+| AM-03 | Phase 8 | Not started |
+| AM-04 | Phase 8 | Not started |
+| AM-05 | Phase 8 | Not started |
+| AM-06 | Phase 8 | Not started |
+| AM-07 | Phase 8 | Not started |
+| AM-08 | Phase 8 | Not started |
+| AM-09 | Phase 8 | Not started |
+| PRG-01 | Phase 8 | Not started |
+| PRG-02 | Phase 8 | Not started |
+| PRG-03 | Phase 8 | Not started |
+| PRG-04 | Phase 8 | Not started |
+| LO-01 | Phase 9 | Not started |
+| LO-02 | Phase 9 | Not started |
+| LO-03 | Phase 9 | Not started |
+| LO-04 | Phase 9 | Not started |
+| LO-05 | Phase 9 | Not started |
+| LO-06 | Phase 9 | Not started |
+| LO-07 | Phase 9 | Not started |
+| LO-08 | Phase 9 | Not started |
+| LO-09 | Phase 9 | Not started |
+| LO-10 | Phase 9 | Not started |
+| SHR-01 | Phase 10 | Not started |
+| SHR-02 | Phase 10 | Not started |
+| SHR-03 | Phase 10 | Not started |
+| SHR-04 | Phase 10 | Not started |
+| DCL-01 | Phase 10 | Not started |
+| DCL-02 | Phase 10 | Not started |
+| DCL-03 | Phase 10 | Not started |
+| DCL-04 | Phase 10 | Not started |
+| LCS-01 | Phase 8 | Not started |
+| LCS-02 | Phase 8 | Not started |
+| LCS-03 | Phase 8 | Not started |
+| LCS-04 | Phase 8 | Not started |
+| INT-01 | Phase 9 | Not started |
+| INT-02 | Phase 9 | Not started |
+| INT-03 | Phase 9 | Not started |
+| CFG-01 | Phase 6 | Not started |
+| CFG-02 | Phase 1 | Not started |
+| CFG-03 | Phase 6 | Not started |
+| CFG-04 | Phase 6 | Not started |
+| CFG-05 | Phase 1 | Not started |
+| OBS-01 | Phase 6 | Not started |
+| OBS-02 | Phase 6 | Not started |
+| OBS-03 | Phase 6 | Not started |
+| OBS-04 | Phase 6 | Not started |
+| COV-01 | Phase 11 | Not started |
+| COV-02 | Phase 11 | Not started |
+| COV-03 | Phase 11 | Not started |
+| GTM-01 | Phase 11 | Not started |
+| GTM-02 | Phase 11 | Not started |
+| COV-v2-01 | Phase 12 | v2 — deferred |
+| COV-v2-02 | Phase 12 | v2 — deferred |
+| COV-v2-03 | Phase 12 | v2 — deferred |
+| COV-v2-04 | Phase 12 | v2 — deferred |
+| COV-v2-05 | Phase 12 | v2 — deferred |
+| PRC-01 | Phase 13 | v2 — deferred |
+| PRC-02 | Phase 13 | v2 — deferred |
+| PRC-03 | Phase 13 | v2 — deferred |
+| PRC-04 | Phase 13 | v2 — deferred |
+| PRC-05 | Phase 13 | v2 — deferred |
+| LOV-01 | Phase 12 | v2 — deferred |
+| LOV-02 | Phase 12 | v2 — deferred |
+| LOV-03 | Phase 12 | v2 — deferred |
+| MOB-01 | Phase 12 | v2 — deferred |
+| INT-v2-01 | Phase 12 | v2 — deferred |
+| INT-v2-02 | Phase 12 | v2 — deferred |
+| INT-v2-03 | Phase 12 | v2 — deferred |
+| INT-v2-04 | Phase 12 | v2 — deferred |
+| LCS-v2-01 | Phase 13 | v2 — deferred |
+| LCS-v2-02 | Phase 13 | v2 — deferred |
+| WKF-01 | Phase 14 | v3 — deferred |
+| WKF-02 | Phase 14 | v3 — deferred |
+| WKF-03 | Phase 14 | v3 — deferred |
+| MOB-v3-01 | Phase 15 | v3 — deferred |
+| EOW-01 | Phase 15 | v3 — deferred |
 
 **Coverage:**
-- v1 requirements: 95 total (SCH 14 + AGY 9 + EVL 9 + TNT 6 + AUD 4 + GLD 6 + EXT 10 + AM 9 + PRG 4 + LO 10 + SHR 4 + DCL 4 + LCS 4 + INT 3 + CFG 5 + OBS 4 + COV 3 + GTM 2)
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 95 ⚠️ (expected; roadmap pass will resolve)
+- v1 requirements: 110 total by category sum (SCH 14 + AGY 9 + EVL 9 + TNT 6 + AUD 4 + GLD 6 + EXT 10 + AM 9 + PRG 4 + LO 10 + SHR 4 + DCL 4 + LCS 4 + INT 3 + CFG 5 + OBS 4 + COV 3 + GTM 2). Source line stated "95 total" — discrepancy noted; mapping covers all 110 actual REQ-IDs.
+- Mapped to v1 phases (1-11): 110 ✓
+- v2 requirements (Phase 12-13): 19 mapped
+- v3 requirements (Phase 14-15): 5 mapped
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-29*
-*Last updated: 2026-04-29 after research-driven definition*
+*Last updated: 2026-04-29 — traceability populated by gsd-roadmapper after roadmap creation*
