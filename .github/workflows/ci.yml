@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Concurrency key uses github.workflow + github.ref only — both are
+# build-system controlled, not user input. Safe by construction; this
+# workflow never interpolates untrusted GitHub event fields (issue titles,
+# PR bodies, commit messages, etc.) into `run:` blocks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, RLS pen tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lender_search_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # Pen tests connect as app_user (NOBYPASSRLS NOSUPERUSER per CONTEXT D-07).
+      DATABASE_URL: postgresql://app_user:app_user_password@localhost:5432/lender_search_test
+      # globalSetup uses DATABASE_MIGRATION_URL to apply migrations as the postgres
+      # superuser (per Plan 06 / Plan 05 — only the owner can ALTER TABLE FORCE).
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/lender_search_test
+      # Pen-test JWT signing secret. CI value is fixture-only; production uses
+      # Vercel encrypted env (Phase 6).
+      RLS_TEST_JWT_SECRET: ci-fixture-jwt-secret-min-16-chars
+      # IMPORTANT: SUPABASE_SERVICE_ROLE_KEY is intentionally NOT set here.
+      # tests/rls/service-role-boundary.test.ts asserts its absence at runtime
+      # (T-01-04 mitigation per Plan 07).
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Provision app_user role (NOBYPASSRLS NOSUPERUSER)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d lender_search_test \
+            -c "CREATE ROLE app_user LOGIN PASSWORD 'app_user_password' NOBYPASSRLS NOSUPERUSER;
+                GRANT CONNECT ON DATABASE lender_search_test TO app_user;
+                GRANT USAGE ON SCHEMA public TO app_user;"
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint (excludes intentional ESLint fixture)
+        run: pnpm lint
+
+      - name: Lint fixture (proves no-restricted-* rules fire on violations)
+        run: pnpm lint:fixture
+
+      - name: Apply migrations + grant DML to app_user (replicates Plan 06 globalSetup)
+        env:
+          # Migrations run as postgres superuser (only the owner can ALTER FORCE).
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lender_search_test
+          PGPASSWORD: postgres
+        run: |
+          pnpm drizzle-kit migrate
+          psql -h localhost -U postgres -d lender_search_test \
+            -c "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tenant, _rls_canary TO app_user;
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;"
+
+      - name: Verify FORCE ROW LEVEL SECURITY is on (TNT-01 gate)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          FORCED=$(psql -h localhost -U postgres -d lender_search_test -t -A -F'|' \
+            -c "SELECT relname || '|' || relforcerowsecurity FROM pg_class WHERE relname IN ('tenant', '_rls_canary') ORDER BY relname")
+          echo "$FORCED"
+          echo "$FORCED" | grep -q "^_rls_canary|t$" || { echo "ERROR: _rls_canary FORCE RLS not on"; exit 1; }
+          echo "$FORCED" | grep -q "^tenant|t$" || { echo "ERROR: tenant FORCE RLS not on"; exit 1; }
+
+      - name: Run RLS pen-test suite (TNT-04 merge gate)
+        run: pnpm test:rls
