@@ -68,3 +68,39 @@ For full context, see [PROJECT.md](.planning/PROJECT.md).
 
 - [Create React App docs](https://facebook.github.io/create-react-app/docs/getting-started)
 - [React docs](https://reactjs.org/)
+
+## Local Development (Phase 1+)
+
+Phase 1 introduces the Postgres tenant-isolation foundation. To run the pen-test suite locally:
+
+```bash
+# 1. Install dependencies (pnpm required — npm is not supported)
+pnpm install
+
+# 2. Bring up Postgres 16 (provisions NOBYPASSRLS app_user role on first boot)
+pnpm db:up
+
+# 3. Copy the env template and edit if needed
+cp .env.local.example .env.local
+
+# 4. Apply migrations (Plan 04+05 land them; this command will work once they exist)
+pnpm db:migrate
+
+# 5. Run the RLS pen-test suite
+pnpm test:rls
+```
+
+To reset the local database (drops the docker volume and re-runs the init script):
+```bash
+pnpm db:reset
+```
+
+The init script provisions `app_user` (NOBYPASSRLS, NOSUPERUSER) — pen tests connect as this user so that `FORCE ROW LEVEL SECURITY` is meaningful. **Never connect tests as the `postgres` superuser; the pen-test setup file aborts the suite if it detects a privileged connection.**
+
+### Run before merging any PR
+
+```bash
+pnpm test:rls
+```
+
+CI fails if any pen test fails. RLS regressions are treated as security incidents (see `CLAUDE.md` § Conventions and `.planning/research/PITFALLS.md` § 3.5).
