@@ -1,18 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 01-tenant-isolation-foundation
 source: [01-VERIFICATION.md]
 started: 2026-04-30T15:10:00Z
-updated: 2026-04-30T15:45:00Z
+updated: 2026-04-30T15:55:00Z
 ---
 
 ## Current Test
 
-number: 2
-name: Demonstrate CI catches a deliberate regression
-expected: |
-  Mutate `expect(rows).toHaveLength(0)` → `1` in `tests/rls/cross-tenant-select.test.ts`, push, see CI red on `pnpm test:rls`, revert, see CI green again.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -33,7 +29,8 @@ how-to-test: `git push` (already done — both fixes on origin/main). Watch the 
 
 ### 2. Demonstrate CI catches a deliberate regression
 expected: Temporarily mutate `expect(rows).toHaveLength(0)` → `1` in `tests/rls/cross-tenant-select.test.ts`, push, confirm CI turns red on `pnpm test:rls`, revert the mutation, confirm CI turns green again. This proves the merge gate actually blocks bad commits — not just that the workflow runs.
-result: [pending]
+result: pass
+verified: 2026-04-30T15:55:00Z (regression caught and recovered on origin/main)
 prior_attempts:
   - timestamp: 2026-04-30T15:30:00Z
     result: blocked (prior-test)
@@ -49,12 +46,12 @@ how-to-test: GitHub repo-admin operation outside the codebase. Settings → Bran
 ## Summary
 
 total: 3
-passed: 1
+passed: 2
 issues: 0
-pending: 1
+pending: 0
 skipped: 1
 blocked: 0
-notes: "Test 1 confirmed pass on real GitHub Actions after fixes e98f115 + d2b6eb6."
+notes: "Tests 1+2 verified pass on real GitHub Actions after fixes e98f115 + d2b6eb6. Test 3 (branch protection) skipped with reason — solo-dev self-discipline accepted in lieu of branch protection rule."
 
 ## Gaps
 
