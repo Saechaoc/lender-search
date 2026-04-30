@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 01-06-PLAN.md (pen-test harness — 5 files at tests/rls/; pnpm test:rls 8/8 passing)"
-last_updated: "2026-04-30T14:44:18.115Z"
+stopped_at: "Completed 01-07-PLAN.md (D-03 coverage matrix — 6 pen-test files at tests/rls/; pnpm test:rls 27/27 in 665ms)"
+last_updated: "2026-04-30T14:56:50.461Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
   completed_phases: 0
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 6 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Plan: 7 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -57,6 +57,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 01 P04 | 3 min | 3 tasks | 6 files |
 | Phase 01 P05 | 4 min | 2 tasks | 6 files |
 | Phase 01 P06 | ~6 min | 5 tasks tasks | 6 files files |
+| Phase 01 P07 | ~7 min | 3 tasks tasks | 6 files files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-06: Pen-test harness landed (5 files at tests/rls/) — globalSetup runs drizzle-kit migrate via execFileSync + GRANTs DML to app_user; setup.ts beforeAll asserts BYPASSRLS=false + relforcerowsecurity=true + tenant_self_filter+canary_tenant_isolation policies present; jose mintJWT/forgeJWT/extractTenantIdFromJWT (HS256, Supabase shape); seedTwoTenants implements Pitfall-7 bootstrap (gen_random_uuid → set_config → INSERT) via app_user; connectAsTenant/connectAsAnonymous transactional wrappers with is_local=true. Smoke run: pnpm test:rls 8/8 in 596ms.
 - [Phase 01]: Plan 01-06: [Rule 3 deviation] global-setup.ts AND setup.ts both needed explicit loadDotenv({path: '.env.local'}) — Vitest 4 globalSetup and setupFiles run in DISTINCT module contexts; the side-effect  (loads .env only) doesn't cross between them. Mirrors drizzle.config.ts's pattern (Plan 05 deviation fix). CI's GitHub Actions secrets still take precedence (dotenv won't override pre-set env vars).
 - [Phase 01]: Plan 01-06: connectAsAnonymous + pool-reused connection raises 22P02 invalid uuid syntax (empty-string GUC) instead of returning 0 rows — Postgres placeholder GUCs persist as '' on the session after set_config+ROLLBACK on a pooled connection. Plan 07 must add RESET app.tenant_id at start of connectAsAnonymous OR use a fresh pg.Client OR update test expectation to 'cast raises 22P02' (also fail-closed). Documented in 01-06-SUMMARY §Phase 7 Findings.
+- [Phase 01]: Plan 01-07: connectAsAnonymous switched to fresh pg.Client (NOT pool.connect()) — Postgres 16 placeholder GUCs once touched stay as '' rather than NULL after RESET/DISCARD ALL, so the only path that yields current_setting=NULL for the 'unset GUC → 0 rows' assertion is a session that never touched the GUC. Plan 06's recommended option 1 (RESET app.tenant_id) was empirically refuted; option 2 (fresh client) chosen. Phase 6 withTenantContext should match this semantic — either fresh client per request or always set_config at request start
+- [Phase 01]: Plan 01-07: GUC-reset test asserts matches_a===false (the value set by set_config did NOT survive ROLLBACK), accepting both NULL and '' as fail-closed outcomes. Original RESEARCH §Pattern 4 / Plan 07 verbatim snippet asserted toBeNull() — strictly impossible in Postgres 16 on a touched-then-rolled-back session. Corrected assertion preserves the same security property (no value leak) while honest about Postgres semantics
+- [Phase 01]: Plan 01-07: TDD RED+GREEN folded into single commits per task — system under test (RLS+FORCE+policies+index) was already built in Plans 04-05, so writing the same test twice (once expecting fail, once expecting pass) is theater. Each commit message says 'RED+GREEN' to make the folding explicit. Structural value of the tests is the regression gate, not simulated red-then-green progression
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:44:18.112Z
-Stopped at: Completed 01-06-PLAN.md (pen-test harness — 5 files at tests/rls/; pnpm test:rls 8/8 passing)
+Last session: 2026-04-30T14:56:50.459Z
+Stopped at: Completed 01-07-PLAN.md (D-03 coverage matrix — 6 pen-test files at tests/rls/; pnpm test:rls 27/27 in 665ms)
 Resume file: None

@@ -57,7 +57,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2; plans sequential)*
 - [x] 01-06-PLAN.md — Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
-- [ ] 01-07-PLAN.md — Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
+- [x] 01-07-PLAN.md — Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
 
 **Wave 4** *(blocked on Wave 3)*
 - [ ] 01-08-PLAN.md — ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint

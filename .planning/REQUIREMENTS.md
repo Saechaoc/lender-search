@@ -57,7 +57,7 @@ Requirements for initial release. Each maps to exactly one roadmap phase below.
 - [x] **TNT-03**: System indexes `tenant_id` on every tenant-scoped table to keep RLS policies on the fast path
 - [x] **TNT-04**: CI pen-test suite (`tests/rls/`) blocks merge on any cross-tenant query that succeeds: cross-tenant read attempts, cross-tenant write attempts, service_role boundary tests, JWT-tampering tests
 - [x] **TNT-05**: System has zero cross-tenant data egress paths; no admin "view as another tenant" feature, no cross-tenant analytics, no cross-tenant pricing comparison surface
-- [ ] **TNT-06**: System has no aggregate competitive-analytics surface comparing one lender's pricing or eligibility to another's — explicitly the territory of the October 2025 OB antitrust complaint
+- [x] **TNT-06**: System has no aggregate competitive-analytics surface comparing one lender's pricing or eligibility to another's — explicitly the territory of the October 2025 OB antitrust complaint
 
 ### Audit (AUD) — Phase 0
 
