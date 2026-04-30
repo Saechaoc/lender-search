@@ -968,24 +968,24 @@ test('two overlapping active program_versions for the same program rejected (SC#
 
 **If this table grew empty:** All claims are verified or cited — no user confirmation needed. Currently A1, A4, A5, A7 are MEDIUM-confidence assumptions worth flagging to the user / discuss-phase if any of them was unclear. CONTEXT.md already locked the choices for A1, A5, A7 (per discretion); A4 is the highest-risk because it's the wedge feature.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Generated column subquery — confirmed BLOCKER but solvable**
+1. **RESOLVED: Generated column subquery — confirmed BLOCKER but solvable**
    - What we know: Postgres rejects `GENERATED ALWAYS AS ((SELECT MIN(...))) STORED`. CONTEXT D-10 wrote the expression literally with the subquery.
    - What's unclear: Nothing — the immutable-function-wrapper workaround (Pattern 4) is the standard solution.
    - Recommendation: Plan adds the wrapper function + generated column in `0004_program_constraints.sql`. CONTEXT D-10 needs an inline annotation: "via `jsonb_min_numeric(j jsonb)` IMMUTABLE wrapper per Pattern 4."
 
-2. **Should the cross-tenant readability tests connect as which user?**
+2. **RESOLVED: Should the cross-tenant readability tests connect as which user?**
    - What we know: `app_user` (NOBYPASSRLS NOSUPERUSER) is what Phase 1 tests use. `agency_rule` policies are `to: 'public'` for SELECT — `app_user` can read.
    - What's unclear: Should the schema-constraint test for "agency rules are cross-tenant readable" use `connectAsAnonymous` (no GUC) OR `connectAsTenant(tenantA)` and verify SELECT works?
    - Recommendation: Both. `connectAsAnonymous` proves "even with no tenant context, agency reads work" (system role / observability use case); `connectAsTenant` proves "tenant A reads the same agency rules tenant B reads." Plan ships both tests.
 
-3. **Phase 7 `extraction_run_id` FK shape — column-only or already-FK?**
+3. **RESOLVED: Phase 7 `extraction_run_id` FK shape — column-only or already-FK?**
    - What we know: SCH-14 says every program_rule traces to extraction_run. Phase 7 (EXT-06) creates `staging.extraction_run`. Phase 2 ships the column.
    - What's unclear: Is `extraction_run_id uuid NULL` shipped as a plain column with the FK added in Phase 7, or as a FK-with-no-target (impossible — FK requires target table)?
    - Recommendation: Phase 2 ships `extraction_run_id uuid NULL` as a plain column (no FK). Phase 7 adds `ALTER TABLE program_rule ADD CONSTRAINT program_rule_extraction_run_fk FOREIGN KEY (extraction_run_id) REFERENCES staging.extraction_run(id)` in its `--custom` migration. Comment on the column declares the deferred wiring.
 
-4. **Should Phase 2 commit a single `agency_rule_version` + `agency_rule` row pair for the FNMA post-foreclosure example, OR keep it as test fixture only?** (CONTEXT Claude's Discretion)
+4. **RESOLVED: Should Phase 2 commit a single `agency_rule_version` + `agency_rule` row pair for the FNMA post-foreclosure example, OR keep it as test fixture only?** (CONTEXT Claude's Discretion)
    - What we know: SC#2 demands a queryable structured DerogRule. Phase 3 owns the full FNMA matrix hand-authoring (AGY-02).
    - What's unclear: Does the Phase 2 SC#2 test need a seeded row, or is a test-fixture row sufficient?
    - Recommendation: **Test fixture only** (CONTEXT Discretion). Reasons:
@@ -993,7 +993,7 @@ test('two overlapping active program_versions for the same program rejected (SC#
      - Test fixture proves the query path without coupling Phase 2 close to Phase 3 hand-authoring start.
      - Migration files stay strictly schema/policy/function — no domain data.
 
-5. **Index strategy on jsonb-extracted columns**
+5. **RESOLVED: Index strategy on jsonb-extracted columns**
    - What we know: D-20.6 round-trip query is `WHERE rule_kind='derog_seasoning' AND rule_body->>'event_type'='FORECLOSURE'`. Without an index this is a seq scan (acceptable at Phase 2's empty-table state but Phase 3 fills agency_rule with ~50 rows).
    - What's unclear: Should Phase 2 ship an expression index now, or defer to Phase 3 when query volume justifies?
    - Recommendation: Ship a partial expression index on `agency_rule (rule_kind, (rule_body->>'event_type')) WHERE rule_kind='derog_seasoning'` in `0005_agency_schema.sql` as a `--custom` step. Cheap; supports Phase 3 query patterns; enforces a maintenance discipline ("if you add a kind that needs jsonb-extracted indexing, declare it here").
