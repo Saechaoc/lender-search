@@ -17,6 +17,7 @@ export default defineConfig({
   test: {
     pool: 'forks',
     isolate: true,
+    setupFiles: ['./tests/schema/setup.ts'],
     sequence: { concurrent: false },
     testTimeout: 10_000,
     hookTimeout: 10_000,
