@@ -100,8 +100,10 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: |
+          # Use plain columns + psql's `-A -F'|'` field separator for boolean rendering as `t`/`f`.
+          # SQL `||` would cast bool to text as `true`/`false` — breaks the grep below.
           FORCED=$(psql -h localhost -U postgres -d lender_search_test -t -A -F'|' \
-            -c "SELECT relname || '|' || relforcerowsecurity FROM pg_class WHERE relname IN ('tenant', '_rls_canary') ORDER BY relname")
+            -c "SELECT relname, relforcerowsecurity FROM pg_class WHERE relname IN ('tenant', '_rls_canary') ORDER BY relname")
           echo "$FORCED"
           echo "$FORCED" | grep -q "^_rls_canary|t$" || { echo "ERROR: _rls_canary FORCE RLS not on"; exit 1; }
           echo "$FORCED" | grep -q "^tenant|t$" || { echo "ERROR: tenant FORCE RLS not on"; exit 1; }
