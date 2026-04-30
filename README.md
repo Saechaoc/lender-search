@@ -1,70 +1,70 @@
-# Getting Started with Create React App
+# Lender Search
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Eligibility-first lender/program search tool for mortgage loan officers. Enter a borrower scenario (FICO, LTV, DTI, occupancy, derogatory history, doc type, special situation) and get a ranked list of programs the borrower qualifies for—with explicit reasons for eligibility, near-miss, or ineligibility citing the rule and layer that fired.
 
-## Available Scripts
+## Core Value
 
-In the project directory, you can run:
+**Correctness on the long tail of derogatory and non-QM scenarios.** Every loan officer can defend eligibility decisions to a borrower or account executive without calling a wholesale lender to confirm.
 
-### `npm start`
+## What's Different
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Eligibility-first data model**: agency base rules (FNMA, FHLMC, FHA, VA) + investor overlays + product features + lender overlays, with explicit layer attribution
+- **Full derogatory event modeling**: BK7/BK13 discharged/dismissed, multi-filing, foreclosure, DIL, short sale, mortgage charge-off, modification, forbearance—with measurement anchors and re-establishment criteria
+- **Non-QM first-class citizen**: ≥60% non-QM programs at MVP; not a second-class citizen in agency-rooted tools
+- **Near-miss surface**: minimum-edit-distance fixes per ineligible program (FICO delta, LTV delta, DTI delta, doc-type swap, seasoning months remaining)
+- **AM onboarding pipeline**: PDF → OCR → multi-pass extraction → rule normalization → overlay detection → confidence scoring → human review
+- **Explainable results**: confidence badges on low-confidence rules, full rule stack, versioned audit trail
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Quick Start
 
-### `npm test`
+```bash
+npm install
+npm start
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Runs app in development mode at [http://localhost:3000](http://localhost:3000).
 
-### `npm run build`
+### Other Scripts
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `npm test` — Launch test runner in watch mode
+- `npm run build` — Build for production
+- `npm run eject` — Eject from Create React App (one-way operation)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Development
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Current prototype is being rebuilt from scratch. The existing `src/App.js` (1,775 lines) serves as a reference for LO scenario form shape and result structure only.
 
-### `npm run eject`
+**Phase 0 (foundation, in progress):**
+- Rule schema with explicit layer field
+- Structured derogatory-event model
+- Encoded agency base rule sets (FNMA, FHLMC, FHA, VA)
+- 200-scenario golden test set with expert-reviewed outcomes
+- Eligibility evaluator returning eligible / near-miss / ineligible
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+**Phase 1 (MVP):**
+- LO scenario form + search interface
+- Result ranking with comparison view
+- Saved scenarios + shareable links
+- AM onboarding UI (PDF upload, extraction review, version control)
+- 50+ programs indexed
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+**Phase 2+ (post-MVP):**
+- USDA, HFA, construction-to-perm
+- Live pricing feeds (opt-in)
+- Multi-tenant lender overlays
+- Mobile optimization
+- Borrower-safe shareable scenario pages
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+For full context, see [PROJECT.md](.planning/PROJECT.md).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Stack
+
+- **Frontend**: React 19 (Create React App)
+- **Language**: JavaScript
+- **Build**: Webpack (via CRA)
+- **State**: localStorage (prototype) → planned migration to Supabase or similar
 
 ## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [Create React App docs](https://facebook.github.io/create-react-app/docs/getting-started)
+- [React docs](https://reactjs.org/)
