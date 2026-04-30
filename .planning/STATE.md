@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md (Drizzle client + setTenantContext primitive)
-last_updated: "2026-04-30T04:54:00.000Z"
+stopped_at: Completed 01-04-PLAN.md (TS schema + drizzle-kit generate)
+last_updated: "2026-04-30T14:22:52.760Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
   completed_phases: 0
   total_plans: 8
-  completed_plans: 3
-  percent: 38
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 3 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
-Status: In progress (Wave 1 complete; Wave 2 unblocked)
-Last activity: 2026-04-30 — Plan 01-03 complete (Drizzle 0.45 client with prepare:false + setTenantContext GUC primitive)
+Plan: 4 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Status: Ready to execute
+Last activity: 2026-04-30
 
 Progress: [███░░░░░░░] 38%
 
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 38%
 *Updated after each plan completion*
 | Phase 01 P02 | 4 min | 2 tasks | 3 files |
 | Phase 01 P03 | ~10 min | 2 tasks | 2 files |
+| Phase 01 P04 | 3 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-03: Driver split documented in lib/db/client.ts JSDoc — app/migrations use postgres-js (Drizzle); pen tests use node-postgres directly to exercise raw transaction GUC contract without TS abstraction (Pitfall 5)
 - [Phase 01]: Plan 01-03: setTenantContext signature accepts PgTransaction OR PgDatabase so Phase 6's withTenantContext request wrapper consumes it unchanged; tenantId passed via Drizzle sql tagged template (parameterized — injection-safe)
 - [Phase 01]: Plan 01-03: Subagent stream timed out (#2410 SSE) after both code commits landed but before metadata commit; orchestrator spot-checked work (typecheck exit 0, working tree clean) and completed metadata step manually — no work lost
+- [Phase 01]: Plan 01-04: NodeNext .js extensions on relative imports in db/schema/canary.ts and db/schema/index.ts (TS2835 — same constraint Plan 01-02/03 hit; the plan's verbatim RESEARCH §Pattern 1 snippet predated NodeNext)
+- [Phase 01]: Plan 01-04: drizzle.config.ts loads .env (not .env.local) — workaround was inline DATABASE_URL=... pnpm drizzle-kit generate; flagged for Plan 05 to fix (load .env.local first)
+- [Phase 01]: Plan 01-04: Generated 0000_initial.sql byte-matches RESEARCH §Pattern 1 expectations (Assumption A1 validated empirically); zero FORCE ROW LEVEL SECURITY clauses by design (Plan 05 owns FORCE via --custom)
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T04:54:00.000Z
-Stopped at: Completed 01-03-PLAN.md (Drizzle client + setTenantContext primitive); Wave 1 done
-Resume file: .planning/phases/01-tenant-isolation-foundation/01-04-PLAN.md (next: TS schema + drizzle-kit generate)
+Last session: 2026-04-30T14:22:42.925Z
+Stopped at: Completed 01-04-PLAN.md (TS schema + drizzle-kit generate)
+Resume file: None

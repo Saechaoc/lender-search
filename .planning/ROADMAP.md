@@ -52,7 +52,7 @@ Plans:
 - [x] 01-03-PLAN.md — Drizzle 0.45 client (prepare: false) + setTenantContext primitive at lib/tenant/context.ts *(2026-04-30)*
 
 **Wave 2** *(blocked on Wave 1; plans sequential)*
-- [ ] 01-04-PLAN.md — TS schema (tenant + _rls_canary) with pgPolicy + index; drizzle-kit generate produces 0000_initial.sql
+- [x] 01-04-PLAN.md — TS schema (tenant + _rls_canary) with pgPolicy + index; drizzle-kit generate produces 0000_initial.sql
 - [ ] 01-05-PLAN.md — `--custom` 0001_force_rls.sql migration + [BLOCKING] `drizzle-kit migrate` against docker Postgres
 
 **Wave 3** *(blocked on Wave 2; plans sequential)*

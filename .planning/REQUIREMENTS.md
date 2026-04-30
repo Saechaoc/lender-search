@@ -52,11 +52,11 @@ Requirements for initial release. Each maps to exactly one roadmap phase below.
 
 ### Multi-tenant isolation (TNT) — Phase 0
 
-- [ ] **TNT-01**: System enforces Postgres Row-Level Security with `FORCE ROW LEVEL SECURITY` on every tenant-scoped table; even table owners are subject to policy
+- [x] **TNT-01**: System enforces Postgres Row-Level Security with `FORCE ROW LEVEL SECURITY` on every tenant-scoped table; even table owners are subject to policy
 - [ ] **TNT-02**: System reads `tenant_id` from JWT app_metadata via `current_setting('app.tenant_id')` at every request boundary; service-role connections never bypass RLS for application traffic
-- [ ] **TNT-03**: System indexes `tenant_id` on every tenant-scoped table to keep RLS policies on the fast path
+- [x] **TNT-03**: System indexes `tenant_id` on every tenant-scoped table to keep RLS policies on the fast path
 - [ ] **TNT-04**: CI pen-test suite (`tests/rls/`) blocks merge on any cross-tenant query that succeeds: cross-tenant read attempts, cross-tenant write attempts, service_role boundary tests, JWT-tampering tests
-- [ ] **TNT-05**: System has zero cross-tenant data egress paths; no admin "view as another tenant" feature, no cross-tenant analytics, no cross-tenant pricing comparison surface
+- [x] **TNT-05**: System has zero cross-tenant data egress paths; no admin "view as another tenant" feature, no cross-tenant analytics, no cross-tenant pricing comparison surface
 - [ ] **TNT-06**: System has no aggregate competitive-analytics surface comparing one lender's pricing or eligibility to another's — explicitly the territory of the October 2025 OB antitrust complaint
 
 ### Audit (AUD) — Phase 0
