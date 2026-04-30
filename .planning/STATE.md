@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 01-02-PLAN.md (t3-env boot-fail-closed)
+last_updated: "2026-04-30T04:51:27.793Z"
+last_activity: 2026-04-30
+progress:
+  total_phases: 15
+  completed_phases: 0
+  total_plans: 8
+  completed_plans: 2
+  percent: 25
+---
+
 # Project State
 
 ## Project Reference
@@ -10,15 +26,16 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 1 of 8 in current phase complete (next: 01-02-PLAN.md t3-env validation)
-Status: In progress (Wave 0 complete; Wave 1 unblocked)
-Last activity: 2026-04-29 — Plan 01-01 complete (workspace + tooling bootstrap; pnpm + TS 5.7 + docker-compose Postgres 16 + drizzle/vitest config shells)
+Plan: 2 of 8 in current phase complete (next: 01-02-PLAN.md t3-env validation)
+Status: Ready to execute
+Last activity: 2026-04-30
 
 Progress: [█░░░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 1
 - Average duration: 15 min
 - Total execution time: 15 min
@@ -30,10 +47,12 @@ Progress: [█░░░░░░░░░] 12%
 | 1     | 1     | 15 min | 15 min |
 
 **Recent Trend:**
+
 - Last 5 plans: 01-01 (15 min)
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01 P02 | 4 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -51,6 +70,9 @@ Recent decisions affecting current work:
 - Plan 01-01: Excluded legacy `src/` from tsconfig.json `include` set; deletion of the prototype itself deferred to Phase 6 per RESEARCH §Open Questions Q1 to keep Phase 1 diffs scoped
 - Plan 01-01: Provisioned `app_user` with both NOBYPASSRLS *and* NOSUPERUSER (plan-mandated) — superuser implicitly bypasses RLS even without `BYPASSRLS`, so dropping both flags closes the gap RESEARCH Pitfall 4 calls out
 - Plan 01-01: Locked `.npmrc save-exact=true` so future `pnpm add` cannot reintroduce caret/tilde ranges and break CI reproducibility
+- [Phase 01]: Plan 01-02: Added clientPrefix: '' to lib/env.ts (not in plan's verbatim snippet) so @t3-oss/env-core@0.13.11's ClientOptions type accepts client: {}; Phase 6 swaps to 'NEXT_PUBLIC_'
+- [Phase 01]: Plan 01-02: Created vitest.env-boot.config.ts (minimal standalone runner) because the plan's prescribed --config='' workaround is broken in Vitest 4.1.5 (interprets empty string as path 'true'); Plan 07/08 evaluates whether to keep
+- [Phase 01]: Plan 01-02: Used .js extensions on dynamic imports in env-boot.test.ts (NodeNext requirement from Plan 01-01's tsconfig); the plan's verbatim extensionless form predated this constraint
 
 ### Pending Todos
 
@@ -73,6 +95,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-29
-Stopped at: Completed 01-01-PLAN.md (workspace + tooling bootstrap)
-Resume file: .planning/phases/01-tenant-isolation-foundation/01-02-PLAN.md (next: t3-env boot-fail-closed validation; runs in Wave 1 alongside 01-03)
+Last session: 2026-04-30T04:51:27.791Z
+Stopped at: Completed 01-02-PLAN.md (t3-env boot-fail-closed)
+Resume file: None

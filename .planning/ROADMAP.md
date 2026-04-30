@@ -48,7 +48,7 @@ Plans:
 - [x] 01-01-PLAN.md — Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user) *(2026-04-29)*
 
 **Wave 1** *(blocked on Wave 0; plans run in parallel)*
-- [ ] 01-02-PLAN.md — t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
+- [x] 01-02-PLAN.md — t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
 - [ ] 01-03-PLAN.md — Drizzle 0.45 client (prepare: false) + setTenantContext primitive at lib/tenant/context.ts
 
 **Wave 2** *(blocked on Wave 1; plans sequential)*

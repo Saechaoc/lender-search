@@ -153,7 +153,7 @@ Requirements for initial release. Each maps to exactly one roadmap phase below.
 - [ ] **CFG-02**: Database is Postgres 16+ via Supabase with Drizzle ORM 0.45; `prepare: false` set for the Supabase pooler
 - [ ] **CFG-03**: All LLM calls run server-side via Server Actions / route handlers; no client-side Anthropic SDK usage; no API keys in localStorage (existing prototype's pattern is explicitly excluded)
 - [ ] **CFG-04**: Inngest 4.2 runs as a separate worker pool for the extraction pipeline; survives Vercel's 60s function ceiling
-- [ ] **CFG-05**: Env-var management uses Vercel encrypted env + `t3-env` runtime validation; no plaintext secrets in source
+- [x] **CFG-05**: Env-var management uses Vercel encrypted env + `t3-env` runtime validation; no plaintext secrets in source
 
 ### Observability (OBS) — Phase 1
 
