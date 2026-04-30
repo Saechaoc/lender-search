@@ -40,7 +40,17 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. JWT-tampering tests, service-role boundary tests, cross-tenant write attempts, and cross-tenant read attempts all fail closed
   4. `tenant_id` is indexed on every tenant-scoped table; RLS policies use `current_setting('app.tenant_id')::uuid` from JWT app_metadata
   5. No environment-variable plaintext secrets land in source; t3-env validates all required keys at boot
-**Plans**: TBD
+**Plans**: 8 plans across 5 waves
+
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user)
+- [ ] 01-02-PLAN.md — Wave 1: t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
+- [ ] 01-03-PLAN.md — Wave 1: Drizzle 0.45 client (prepare: false) + setTenantContext primitive at lib/tenant/context.ts
+- [ ] 01-04-PLAN.md — Wave 2: TS schema (tenant + _rls_canary) with pgPolicy + index; drizzle-kit generate produces 0000_initial.sql
+- [ ] 01-05-PLAN.md — Wave 2: --custom 0001_force_rls.sql migration + [BLOCKING] drizzle-kit migrate against docker Postgres
+- [ ] 01-06-PLAN.md — Wave 3: Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
+- [ ] 01-07-PLAN.md — Wave 3: Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
+- [ ] 01-08-PLAN.md — Wave 4: ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint
 **UI hint**: no
 
 ### Phase 2: Rule Schema
