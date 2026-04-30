@@ -30,7 +30,9 @@ loadDotenv({ path: '.env.local' });
 loadDotenv({ path: '.env' });
 
 declare global {
-  // eslint-disable-next-line no-var
+  // `var` is required for `declare global` to attach a property to globalThis
+  // at runtime. typescript-eslint's `no-var` rule does not flag this pattern
+  // (declarations inside `declare global`), so no disable directive is needed.
   var __pgPool: Pool;
 }
 

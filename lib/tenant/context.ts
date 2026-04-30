@@ -46,12 +46,21 @@ import type { PgDatabase, PgTransaction } from 'drizzle-orm/pg-core';
  * @param tenantId UUID string identifying the tenant; passed as a parameter
  *                 (never interpolated) so SQL injection is structurally impossible.
  */
+// The `any` triplets in the union below are deliberate: Drizzle 0.45's
+// PgDatabase<TQueryResult, TFullSchema, TSchema> and PgTransaction generics
+// each take three type parameters, and the helper is intentionally generic
+// over all three so Phase 6's `withTenantContext` middleware can pass a
+// typed Drizzle handle without rewriting the signature. typescript-eslint's
+// `no-explicit-any` is correct in general but wrong for forward-compat seam
+// types like this — see Plan 03 SUMMARY §Decisions Made.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function setTenantContext(
   tx: PgTransaction<any, any, any> | PgDatabase<any, any, any>,
   tenantId: string,
 ): Promise<void> {
   await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * The canonical GUC name. Exported for documentation purposes ONLY — code
