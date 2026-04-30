@@ -43,14 +43,32 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 8 plans across 5 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0: Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user)
-- [ ] 01-02-PLAN.md — Wave 1: t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
-- [ ] 01-03-PLAN.md — Wave 1: Drizzle 0.45 client (prepare: false) + setTenantContext primitive at lib/tenant/context.ts
-- [ ] 01-04-PLAN.md — Wave 2: TS schema (tenant + _rls_canary) with pgPolicy + index; drizzle-kit generate produces 0000_initial.sql
-- [ ] 01-05-PLAN.md — Wave 2: --custom 0001_force_rls.sql migration + [BLOCKING] drizzle-kit migrate against docker Postgres
-- [ ] 01-06-PLAN.md — Wave 3: Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
-- [ ] 01-07-PLAN.md — Wave 3: Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
-- [ ] 01-08-PLAN.md — Wave 4: ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint
+
+**Wave 0** *(blocks all later waves)*
+- [ ] 01-01-PLAN.md — Workspace + tooling bootstrap (pnpm, TS 5.7, drizzle/vitest config shells, docker-compose Postgres 16, NOBYPASSRLS app_user)
+
+**Wave 1** *(blocked on Wave 0; plans run in parallel)*
+- [ ] 01-02-PLAN.md — t3-env boot-fail-closed validation at lib/env.ts + env-boot smoke test
+- [ ] 01-03-PLAN.md — Drizzle 0.45 client (prepare: false) + setTenantContext primitive at lib/tenant/context.ts
+
+**Wave 2** *(blocked on Wave 1; plans sequential)*
+- [ ] 01-04-PLAN.md — TS schema (tenant + _rls_canary) with pgPolicy + index; drizzle-kit generate produces 0000_initial.sql
+- [ ] 01-05-PLAN.md — `--custom` 0001_force_rls.sql migration + [BLOCKING] `drizzle-kit migrate` against docker Postgres
+
+**Wave 3** *(blocked on Wave 2; plans sequential)*
+- [ ] 01-06-PLAN.md — Pen-test harness (globalSetup, setup.ts BYPASSRLS+FORCE checks, JWT/tenants/connection fixtures)
+- [ ] 01-07-PLAN.md — Six pen tests covering D-03 matrix (cross-tenant select/write, JWT tampering, service-role, GUC reset, index scan)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 01-08-PLAN.md — ESLint flat config (process.env + service-role guards) + GitHub Actions CI workflow + final verification checkpoint
+
+**Cross-cutting constraints** *(truths shared across 2+ plans):*
+- Tenant filtering is database-enforced via RLS, never application-layer
+- GUC name `app.tenant_id` is single source of truth — defined only in `lib/tenant/context.ts`
+- `drizzle-kit migrate` (file-based migrations); never `drizzle-kit push` (silently drops RLS DDL — Issue #3504)
+- Phase 1 has no user/auth surface; JWT mocked via `jose` for tests; real Supabase JWKS validation lands Phase 6
+- `FORCE ROW LEVEL SECURITY` required so even table owners are subject to policy
+
 **UI hint**: no
 
 ### Phase 2: Rule Schema
