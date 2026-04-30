@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md (t3-env boot-fail-closed)
-last_updated: "2026-04-30T04:51:27.793Z"
+stopped_at: Completed 01-03-PLAN.md (Drizzle client + setTenantContext primitive)
+last_updated: "2026-04-30T04:54:00.000Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 15
   completed_phases: 0
   total_plans: 8
-  completed_plans: 2
-  percent: 25
+  completed_plans: 3
+  percent: 38
 ---
 
 # Project State
@@ -26,33 +26,34 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 1 of 15 (Tenant Isolation Foundation)
-Plan: 2 of 8 in current phase complete (next: 01-02-PLAN.md t3-env validation)
-Status: Ready to execute
-Last activity: 2026-04-30
+Plan: 3 of 8 in current phase complete (Wave 1 done; next: 01-04-PLAN.md schema + drizzle-kit generate)
+Status: In progress (Wave 1 complete; Wave 2 unblocked)
+Last activity: 2026-04-30 — Plan 01-03 complete (Drizzle 0.45 client with prepare:false + setTenantContext GUC primitive)
 
-Progress: [█░░░░░░░░░] 12%
+Progress: [███░░░░░░░] 38%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 1
-- Average duration: 15 min
-- Total execution time: 15 min
+- Total plans completed: 3
+- Average duration: ~10 min
+- Total execution time: ~29 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1     | 1     | 15 min | 15 min |
+| 1     | 3     | ~29 min | ~10 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (15 min)
+- Last 5 plans: 01-01 (15 min), 01-02 (4 min), 01-03 (~10 min)
 - Trend: -
 
 *Updated after each plan completion*
 | Phase 01 P02 | 4 min | 2 tasks | 3 files |
+| Phase 01 P03 | ~10 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-02: Added clientPrefix: '' to lib/env.ts (not in plan's verbatim snippet) so @t3-oss/env-core@0.13.11's ClientOptions type accepts client: {}; Phase 6 swaps to 'NEXT_PUBLIC_'
 - [Phase 01]: Plan 01-02: Created vitest.env-boot.config.ts (minimal standalone runner) because the plan's prescribed --config='' workaround is broken in Vitest 4.1.5 (interprets empty string as path 'true'); Plan 07/08 evaluates whether to keep
 - [Phase 01]: Plan 01-02: Used .js extensions on dynamic imports in env-boot.test.ts (NodeNext requirement from Plan 01-01's tsconfig); the plan's verbatim extensionless form predated this constraint
+- [Phase 01]: Plan 01-03: Driver split documented in lib/db/client.ts JSDoc — app/migrations use postgres-js (Drizzle); pen tests use node-postgres directly to exercise raw transaction GUC contract without TS abstraction (Pitfall 5)
+- [Phase 01]: Plan 01-03: setTenantContext signature accepts PgTransaction OR PgDatabase so Phase 6's withTenantContext request wrapper consumes it unchanged; tenantId passed via Drizzle sql tagged template (parameterized — injection-safe)
+- [Phase 01]: Plan 01-03: Subagent stream timed out (#2410 SSE) after both code commits landed but before metadata commit; orchestrator spot-checked work (typecheck exit 0, working tree clean) and completed metadata step manually — no work lost
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T04:51:27.791Z
-Stopped at: Completed 01-02-PLAN.md (t3-env boot-fail-closed)
-Resume file: None
+Last session: 2026-04-30T04:54:00.000Z
+Stopped at: Completed 01-03-PLAN.md (Drizzle client + setTenantContext primitive); Wave 1 done
+Resume file: .planning/phases/01-tenant-isolation-foundation/01-04-PLAN.md (next: TS schema + drizzle-kit generate)
