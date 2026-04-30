@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest';
 import { connectAsTenant } from './fixtures/connection.js';
 import { extractTenantIdFromJWT, forgeJWT } from './fixtures/jwt.js';
-import { seedTwoTenants } from './fixtures/tenants.js';
+import { seedTwoTenants } from './seedTwoTenants.js';
 
 describe('RLS: JWT tampering', () => {
   it('forgeJWT + extractTenantIdFromJWT round-trips the tampered tenant_id (sanity)', async () => {

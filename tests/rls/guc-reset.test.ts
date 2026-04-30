@@ -17,7 +17,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { connectAsTenant } from './fixtures/connection.js';
-import { seedTwoTenants } from './fixtures/tenants.js';
+import { seedTwoTenants } from './seedTwoTenants.js';
 
 describe('RLS: GUC reset (T-01-05)', () => {
   it('after connectAsTenant ROLLBACK, the GUC value does NOT match the previously-set tenant', async () => {

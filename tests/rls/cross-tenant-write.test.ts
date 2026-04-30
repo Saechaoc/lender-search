@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { connectAsTenant } from './fixtures/connection.js';
-import { seedTwoTenants } from './fixtures/tenants.js';
+import { seedTwoTenants } from './seedTwoTenants.js';
 
 describe('RLS: cross-tenant write', () => {
   it('INSERT _rls_canary with tenant_id=B while GUC=A → rejected by WITH CHECK', async () => {
