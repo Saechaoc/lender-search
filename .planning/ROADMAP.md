@@ -86,7 +86,7 @@ Plans:
 Plans:
 
 **Wave 0** *(blocks all later waves)*
-- [ ] 02-01-PLAN.md — daterange customType + system_role pgRole + scripts/init-db.sh extension + 17 lib/rules/schemas Zod schemas + dispatch table + vitest.schema.config.ts + test:schema script
+- [x] 02-01-PLAN.md — daterange customType + system_role pgRole + scripts/init-db.sh extension + 17 lib/rules/schemas Zod schemas + dispatch table + vitest.schema.config.ts + test:schema script
 
 **Wave 1** *(blocked on Wave 0; plans run in parallel)*
 - [ ] 02-02-PLAN.md — db/schema TS for program/program_version/program_rule/rule_citation tables + index barrel extension (SCH-01/SCH-09/SCH-10/SCH-11/SCH-12/SCH-13/SCH-14)
@@ -283,7 +283,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
-| 2. Rule Schema | 0/9 | Not started | - |
+| 2. Rule Schema | 1/9 | In Progress|  |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
 | 5. Golden Set + Phase 0 Exit Gates | 0/TBD | Not started | - |
