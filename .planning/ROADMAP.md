@@ -100,7 +100,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2; sequential gate then parallel)*
 - [x] 02-07-PLAN.md — [BLOCKING] pnpm db:reset + drizzle-kit migrate + psql introspection asserting FORCE / pg_proc / pg_extension / GENERATED columns / CHECKs / EXCLUDE / partial indexes
 - [x] 02-08-PLAN.md — tests/schema/ structural test suite (D-20 #1-#8 + D-10 min_confidence + SCH-01 layer enum) — 9 tests + setup + seed fixture
-- [ ] 02-09-PLAN.md — tests/rls/ pen-test extension (D-19) — 5 cross-tenant tests covering Phase 1 D-03 matrix on the 5 new tenant-scoped tables + seedTwoTenants extension + global-setup TRUNCATE/GRANT extension
+- [x] 02-09-PLAN.md — tests/rls/ pen-test extension (D-19) — 5 cross-tenant tests covering Phase 1 D-03 matrix on the 5 new tenant-scoped tables + seedTwoTenants extension + global-setup TRUNCATE/GRANT extension
 
 **Cross-cutting constraints** *(truths shared across 2+ plans):*
 - Phase 1 patterns reused unchanged: NodeNext .js extensions; .env.local-first dotenv ordering; vitest pool: 'forks'; canonical RLS predicate `current_setting('app.tenant_id', true)::uuid`; `--custom` migrations for FORCE/EXCLUDE/SQL functions
