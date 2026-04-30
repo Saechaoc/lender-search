@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **lender-search** (147 symbols, 164 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **lender-search** (231 symbols, 238 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -39,8 +39,6 @@ This project is indexed by GitNexus as **lender-search** (147 symbols, 164 relat
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-
-> **Note:** the current GitNexus index reflects the legacy React prototype at `src/App.js`. The project is being rebuilt from scratch on a new stack (Next.js 16 + Postgres/Supabase) per `.planning/PROJECT.md` — re-run `npx gitnexus analyze` after the new code lands so impact analysis covers the new symbols.
 
 <!-- gitnexus:end -->
 

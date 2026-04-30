@@ -12,7 +12,7 @@ Lender Search is built phase-by-phase along a single critical path: **schema cor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Tenant Isolation Foundation** - Postgres + RLS + CI pen-test suite enforcing zero cross-tenant egress before any tenant data exists
+- [x] **Phase 1: Tenant Isolation Foundation** - Postgres + RLS + CI pen-test suite enforcing zero cross-tenant egress before any tenant data exists *(2026-04-30 — verified human_needed; 3 GitHub-side UAT items pending)*
 - [ ] **Phase 2: Rule Schema** - Layered rule schema, structured derog model, bitemporal versioning, citation discipline as DB constraint
 - [ ] **Phase 3: Audit Log + Agency Rule Encoding** - Append-only `evaluation_event`, FNMA/FHLMC/FHA/VA hand-authored rule sets, agency cascade infrastructure
 - [ ] **Phase 4: Pure-TS Evaluation Engine** - Snapshot-based evaluator with derog state machine, near-miss, layer attribution; library-vs-custom spike resolved
@@ -255,7 +255,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Tenant Isolation Foundation | 1/8 | In Progress | - |
+| 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
 | 2. Rule Schema | 0/TBD | Not started | - |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
