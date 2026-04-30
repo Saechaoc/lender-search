@@ -111,5 +111,5 @@ AS $$
     p.agency_body, p.overlay_body
   FROM paired p
   WHERE p.rule_kind IN ('occupancy_allow', 'purpose_allow', 'property_type_allow', 'doc_type_allow')
-    AND NOT (p.agency_body->'values' @> p.overlay_body->'values');
+    AND NOT ((p.agency_body->'values') @> (p.overlay_body->'values'));
 $$;
