@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-rule-schema
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md]
 started: 2026-05-01T14:33:00Z
@@ -94,25 +94,30 @@ blocked: 0
   debug_session: ""
 
 - truth: "jsonb_min_numeric tolerates non-numeric jsonb values (booleans, strings) without raising — returns NULL or skips them per WR-02 spec"
-  status: failed
-  reason: "User reported test failure: tests/schema/min-confidence-generated.test.ts:53 + :72 both `error: invalid input syntax for type numeric: \"true\"`. WR-02 fix in db/migrations/0004_program_constraints.sql did not actually wrap the numeric cast — the function still attempts `'true'::numeric` and Postgres raises."
+  status: likely_resolved_by_replay
+  reason: "Test 2 reported failures at tests/schema/min-confidence-generated.test.ts:53 + :72 both `error: invalid input syntax for type numeric: \"true\"`. Source inspection of db/migrations/0004_program_constraints.sql lines 59–68 confirms the fix IS present: `WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'` filters non-numeric text before the numeric cast in MIN(). 'true' would not match the regex and would be filtered out."
   severity: major
   test: 2
   artifacts:
     - path: db/migrations/0004_program_constraints.sql
-      issue: "jsonb_min_numeric body still casts every jsonb value to numeric without jsonb_typeof guard"
-    - path: tests/schema/min-confidence-generated.test.ts
-      issue: "tests 53 + 72 still failing — fix commit 18085a6 did not satisfy assertions"
+      issue: "Source fix at commit 18085a6 IS correct (regex filter on jsonb_each_text values before ::numeric cast in jsonb_min_numeric). No further source change required pending replay verification."
+  root_cause: |
+    Hypothesis: same drizzle-kit idempotency artifact as CR-01. 0004 was already recorded in __drizzle_migrations before the WR-02 fix landed. `pnpm db:migrate` is a no-op for already-applied migrations, so the deployed jsonb_min_numeric remained the pre-fix version (no WHERE regex filter).
+
+    Confirmation path: replay just lines 59–68 of 0004_program_constraints.sql in psql (CREATE OR REPLACE FUNCTION is safe — no ALTER TABLE steps need to re-run), then re-run `pnpm test:schema`. Expected outcome: all 94 schema tests green.
+
+    If tests still fail after replay, the regex semantics need to be re-examined (one risk: jsonb_each_text rendering of jsonb boolean `true` produces the literal string 'true', which the regex correctly rejects — but if for any reason Postgres inlines the SQL function and reorders evaluation, the cast could be attempted before the WHERE; SQL semantics say no, but inlined IMMUTABLE functions in generated-column expressions have historically had edge cases).
   missing:
-    - "In jsonb_min_numeric, filter or branch on jsonb_typeof(value) = 'number' before casting; alternatively wrap the cast in a per-row exception handler that skips non-numeric values"
-    - "Re-run pnpm test:schema and confirm 0 failures"
+    - "Replay function body (lines 59–68 of db/migrations/0004_program_constraints.sql) directly in psql — `CREATE OR REPLACE FUNCTION jsonb_min_numeric...`"
+    - "Re-run `pnpm test:schema` and confirm 0 failures"
+    - "If failures persist after replay: replace regex filter with explicit `WHERE jsonb_typeof(j -> key) = 'number'` (requires switching jsonb_each_text → jsonb_each + ((value)::numeric) — type-safe but more verbose)"
+    - "Adopt project convention: post-merge fixes to migration .sql files ship as a NEW migration, not in-place edits, so drizzle-kit's idempotency guarantee actually applies (also documented under the CR-01 gap above)"
   fix_commit_to_review: 18085a6
-  root_cause: ""
   debug_session: ""
 
 - truth: "ESLint runs clean (0 errors, 0 warnings) on tests/ after fix commits"
   status: failed
-  reason: "User reported 3 warnings — all `Unused eslint-disable directive (no problems were reported from 'no-var')` at tests/rls/global-setup.ts:59, tests/schema/setup.ts:20, tests/schema/setup.ts:22. Stale `eslint-disable no-var` directives left over from earlier code; the underlying lines no longer trigger no-var. Auto-fixable with `pnpm lint --fix`."
+  reason: "User reported 3 warnings — all `Unused eslint-disable directive (no problems were reported from 'no-var')` at tests/rls/global-setup.ts:59, tests/schema/setup.ts:20, tests/schema/setup.ts:22."
   severity: minor
   test: 6
   artifacts:
@@ -120,7 +125,8 @@ blocked: 0
       issue: "stale eslint-disable no-var directive on line 59"
     - path: tests/schema/setup.ts
       issue: "stale eslint-disable no-var directives on lines 20 + 22"
+  root_cause: |
+    Stale eslint-disable directives. The underlying lines were changed (likely `var` → `let`/`const` modernization, or pattern moved into globalThis assignment that doesn't trigger no-var) at some prior commit, but the eslint-disable comments were left behind. ESLint's `reportUnusedDisableDirectives` rule flags these as warnings rather than silently dropping them.
   missing:
-    - "Run `pnpm lint --fix` (or remove the 3 directives by hand) and re-verify clean lint"
-  root_cause: ""
+    - "Run `pnpm lint --fix` (auto-removes the 3 stale directives) — single one-liner fix"
   debug_session: ""
