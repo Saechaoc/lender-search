@@ -7,6 +7,7 @@
  */
 import type { Pool } from 'pg';
 import type { DerogSeasoning } from '../../../lib/rules/schemas/derog-seasoning.js';
+import { seedAgencyVersion } from '../../_shared/agency-fixture.js';
 
 export interface TenantSeed {
   tenantId: string;
@@ -80,60 +81,40 @@ export async function seedAgencyDerogRule(
   _effectivePeriodHint: string,
   derogBody: DerogSeasoning,
 ): Promise<{ agencyRuleVersionId: string; agencyRuleId: string; citationId: string }> {
-  // Generate a unique non-overlapping daterange per call so the
-  // agency_rule_version_no_overlap EXCLUDE constraint doesn't fire across
-  // multiple seed invocations within a test run. The hint param is kept for
-  // backward compatibility but ignored — Phase 3 hand-authoring will use
-  // real dated ranges; Phase 2 tests just need uniqueness.
-  const startYear = 2100 + Math.floor(Math.random() * 100000);
-  const effectivePeriod = `[${startYear}-01-01,${startYear + 1}-01-01)`;
+  // Per WR-05: delegate the SYSTEM-tenant + ARV + citation bootstrap to the
+  // shared module so this stays in lockstep with seedTwoTenants. The
+  // _effectivePeriodHint param is kept for backward compatibility but
+  // ignored — the shared module randomizes the daterange to avoid the
+  // agency_rule_version_no_overlap EXCLUDE tripping across multiple seeds
+  // in a single test run.
+  const bootstrap = await seedAgencyVersion(adminPool, {
+    agency,
+    citationExcerpt: 'FNMA derog matrix excerpt',
+  });
+
+  // Layer the per-rule_kind agency_rule INSERT under the same admin
+  // connection. This runs in its OWN transaction (the shared bootstrap
+  // already committed before returning), which is fine because the FK
+  // target (agency_rule_version) is now visible.
   const client = await adminPool.connect();
   try {
     await client.query('BEGIN');
-
-    let systemTenantId: string;
-    const lookup = await client.query<{ id: string }>(
-      `SELECT id::text FROM tenant WHERE kind = 'SYSTEM' LIMIT 1`,
-    );
-    if (lookup.rows[0]) {
-      systemTenantId = lookup.rows[0].id;
-    } else {
-      const created = await client.query<{ id: string }>(
-        `INSERT INTO tenant (id, kind, name)
-         VALUES (gen_random_uuid(), 'SYSTEM', 'Agency Hand-Authoring System Tenant')
-         RETURNING id::text`,
-      );
-      systemTenantId = created.rows[0]!.id;
-    }
-
-    await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [systemTenantId]);
-
-    const citationResult = await client.query<{ id: string }>(
-      `INSERT INTO rule_citation (tenant_id, source_url, excerpt)
-       VALUES ($1, 'https://selling-guide.fanniemae.com/B3-5.3-07', 'FNMA derog matrix excerpt')
-       RETURNING id::text`,
-      [systemTenantId],
-    );
-    const citationId = citationResult.rows[0]!.id;
-
-    const arvResult = await client.query<{ id: string }>(
-      `INSERT INTO agency_rule_version (agency, version_label, source_url, effective_period)
-       VALUES ($1, 'SEL-' || gen_random_uuid()::text, 'https://selling-guide.fanniemae.com/2026-04', $2::daterange)
-       RETURNING id::text`,
-      [agency, effectivePeriod],
-    );
-    const agencyRuleVersionId = arvResult.rows[0]!.id;
+    await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [bootstrap.systemTenantId]);
 
     const ruleResult = await client.query<{ id: string }>(
       `INSERT INTO agency_rule (agency_rule_version_id, rule_kind, rule_body, primary_citation_id)
        VALUES ($1, 'derog_seasoning', $2::jsonb, $3)
        RETURNING id::text`,
-      [agencyRuleVersionId, JSON.stringify(derogBody), citationId],
+      [bootstrap.agencyRuleVersionId, JSON.stringify(derogBody), bootstrap.citationId],
     );
     const agencyRuleId = ruleResult.rows[0]!.id;
 
     await client.query('COMMIT');
-    return { agencyRuleVersionId, agencyRuleId, citationId };
+    return {
+      agencyRuleVersionId: bootstrap.agencyRuleVersionId,
+      agencyRuleId,
+      citationId: bootstrap.citationId,
+    };
   } catch (err) {
     try {
       await client.query('ROLLBACK');

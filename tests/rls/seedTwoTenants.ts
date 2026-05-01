@@ -31,6 +31,7 @@
  * as a Rule 3 deviation (plan-mandated path doesn't match Phase 1 layout).
  */
 import type { Pool } from 'pg';
+import { seedAgencyVersion } from '../_shared/agency-fixture.js';
 
 export interface SeedResult {
   // Phase 1 baseline
@@ -49,81 +50,6 @@ export interface SeedResult {
   programRuleB: string;
   citationA: string;
   citationB: string;
-}
-
-/**
- * Seed an agency_rule_version + a citation under the postgres connection.
- * Returns the IDs for use in subsequent tenant seeding.
- *
- * Per Pitfall G: agency_rule_version + agency_rule are system-owned
- * (system_role policy); only the postgres role can write to them. The
- * adminPool connection-string yields a postgres-superuser session.
- *
- * Generates a non-overlapping daterange per call so the
- * agency_rule_version_no_overlap EXCLUDE constraint (Plan 02-06) doesn't
- * fire across multiple seedTwoTenants invocations within a single test run
- * — same pattern as tests/schema/fixtures/seed.ts::seedAgencyDerogRule.
- */
-async function seedSharedAgency(
-  adminPool: Pool,
-): Promise<{ agencyRuleVersionId: string; citationId: string }> {
-  const client = await adminPool.connect();
-  try {
-    await client.query('BEGIN');
-
-    // System tenant for agency citations (RLS-policed; system-tenant rows
-    // are visible to system_role).
-    let systemTenantId: string;
-    const lookup = await client.query<{ id: string }>(
-      `SELECT id::text FROM tenant WHERE kind = 'SYSTEM' LIMIT 1`,
-    );
-    if (lookup.rows[0]) {
-      systemTenantId = lookup.rows[0].id;
-    } else {
-      const created = await client.query<{ id: string }>(
-        `INSERT INTO tenant (id, kind, name)
-         VALUES (gen_random_uuid(), 'SYSTEM', 'Agency Hand-Authoring System Tenant')
-         RETURNING id::text`,
-      );
-      systemTenantId = created.rows[0]!.id;
-    }
-
-    await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [systemTenantId]);
-
-    const cit = await client.query<{ id: string }>(
-      `INSERT INTO rule_citation (tenant_id, source_url, excerpt)
-       VALUES ($1, 'https://selling-guide.fanniemae.com/B3-5.3-07', 'shared agency citation')
-       RETURNING id::text`,
-      [systemTenantId],
-    );
-    const citationId = cit.rows[0]!.id;
-
-    // Non-overlapping daterange per call — uses a wide random window so the
-    // EXCLUDE (agency WITH =, effective_period WITH &&) constraint doesn't
-    // fire across multiple seedTwoTenants() calls in a single suite run.
-    const startYear = 2100 + Math.floor(Math.random() * 100000);
-    const effectivePeriod = `[${startYear}-01-01,${startYear + 1}-01-01)`;
-
-    const arv = await client.query<{ id: string }>(
-      `INSERT INTO agency_rule_version (agency, version_label, source_url, effective_period)
-       VALUES ('FNMA', 'SEL-' || gen_random_uuid()::text, 'https://selling-guide.fanniemae.com/2026-04', $1::daterange)
-       RETURNING id::text`,
-      [effectivePeriod],
-    );
-    const agencyRuleVersionId = arv.rows[0]!.id;
-
-    await client.query('COMMIT');
-    return { agencyRuleVersionId, citationId };
-  } catch (err) {
-    try {
-      await client.query('ROLLBACK');
-    } catch {
-      /* swallow */
-    }
-    throw err;
-  } finally {
-    client.release();
-  }
 }
 
 /**
@@ -246,8 +172,13 @@ export async function seedTwoTenants(
     );
   }
 
-  // Step 1: shared agency_rule_version + citation (system tenant).
-  const shared = await seedSharedAgency(adminPoolToUse);
+  // Step 1: shared agency_rule_version + citation (system tenant). Per WR-05
+  // this delegates to the shared bootstrap module so the same logic powers
+  // tests/schema/fixtures/seed.ts::seedAgencyDerogRule.
+  const shared = await seedAgencyVersion(adminPoolToUse, {
+    agency: 'FNMA',
+    citationExcerpt: 'shared agency citation',
+  });
 
   // Step 2: tenant A's program family.
   const a = await seedOneTenantWithProgramFamily(pool, shared.agencyRuleVersionId, 'A');
