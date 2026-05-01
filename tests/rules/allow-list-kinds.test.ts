@@ -21,6 +21,10 @@ describe('allow-list / geo / special rule_kind schemas', () => {
     it('rejects unknown occupancy', () => {
       expect(() => occupancyAllowSchema.parse({ values: ['VACATION_RENTAL'] })).toThrow(ZodError);
     });
+    it('parses missing values key as empty allow-list (WR-03 default consistency)', () => {
+      const parsed = occupancyAllowSchema.parse({});
+      expect(parsed.values).toEqual([]);
+    });
   });
 
   describe('purposeAllowSchema', () => {
@@ -30,6 +34,10 @@ describe('allow-list / geo / special rule_kind schemas', () => {
     });
     it('rejects unknown purpose', () => {
       expect(() => purposeAllowSchema.parse({ values: ['BRIDGE_LOAN'] })).toThrow(ZodError);
+    });
+    it('parses missing values key as empty allow-list (WR-03 default consistency)', () => {
+      const parsed = purposeAllowSchema.parse({});
+      expect(parsed.values).toEqual([]);
     });
   });
 
@@ -41,6 +49,10 @@ describe('allow-list / geo / special rule_kind schemas', () => {
     it('rejects unknown property type', () => {
       expect(() => propertyTypeAllowSchema.parse({ values: ['HOTEL'] })).toThrow(ZodError);
     });
+    it('parses missing values key as empty allow-list (WR-03 default consistency)', () => {
+      const parsed = propertyTypeAllowSchema.parse({});
+      expect(parsed.values).toEqual([]);
+    });
   });
 
   describe('docTypeAllowSchema', () => {
@@ -50,6 +62,10 @@ describe('allow-list / geo / special rule_kind schemas', () => {
     });
     it('rejects unknown doc type', () => {
       expect(() => docTypeAllowSchema.parse({ values: ['STATED'] })).toThrow(ZodError);
+    });
+    it('parses missing values key as empty allow-list (WR-03 default consistency)', () => {
+      const parsed = docTypeAllowSchema.parse({});
+      expect(parsed.values).toEqual([]);
     });
   });
 

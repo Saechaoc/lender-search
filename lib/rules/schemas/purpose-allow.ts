@@ -11,6 +11,9 @@
 import { z } from 'zod';
 
 export const purposeAllowSchema = z.object({
+  // Default to [] for consistency with sibling schemas (see occupancy-allow.ts
+  // header for the full rationale). Missing `values` parses to an empty
+  // allow-list rather than throwing.
   values: z.array(z.enum([
     'PURCHASE',
     'RATE_TERM_REFI',
@@ -19,6 +22,6 @@ export const purposeAllowSchema = z.object({
     'CONSTRUCTION_TO_PERM',
     'HELOC',
     'CES_SECOND_LIEN',
-  ])),
+  ])).default([]),
 });
 export type PurposeAllow = z.infer<typeof purposeAllowSchema>;

@@ -12,6 +12,9 @@
 import { z } from 'zod';
 
 export const propertyTypeAllowSchema = z.object({
+  // Default to [] for consistency with sibling schemas (see occupancy-allow.ts
+  // header for the full rationale). Missing `values` parses to an empty
+  // allow-list rather than throwing.
   values: z.array(z.enum([
     'SFR',
     'TWO_TO_FOUR_UNIT',
@@ -20,6 +23,6 @@ export const propertyTypeAllowSchema = z.object({
     'CO_OP',
     'PUD',
     'MANUFACTURED',
-  ])),
+  ])).default([]),
 });
 export type PropertyTypeAllow = z.infer<typeof propertyTypeAllowSchema>;

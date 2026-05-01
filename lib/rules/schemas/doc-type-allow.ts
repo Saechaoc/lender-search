@@ -12,6 +12,9 @@
 import { z } from 'zod';
 
 export const docTypeAllowSchema = z.object({
+  // Default to [] for consistency with sibling schemas (see occupancy-allow.ts
+  // header for the full rationale). Missing `values` parses to an empty
+  // allow-list rather than throwing.
   values: z.array(z.enum([
     'FULL_DOC',
     'BANK_STATEMENT_12MO',
@@ -21,6 +24,6 @@ export const docTypeAllowSchema = z.object({
     'ASSET_DEPLETION',
     'NO_DOC',
     '1099_ONLY',
-  ])),
+  ])).default([]),
 });
 export type DocTypeAllow = z.infer<typeof docTypeAllowSchema>;
