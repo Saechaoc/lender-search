@@ -85,6 +85,21 @@ describe('allow-list / geo / special rule_kind schemas', () => {
       expect(parsed.allowList).toEqual([]);
       expect(parsed.denyList).toEqual([]);
     });
+    it('accepts overlapping allow/deny lists at parse time (WR-04: mutual exclusion deferred to Phase 8 AM commit)', () => {
+      // The geo-state header (lines 4-10) explicitly defers mutual exclusion
+      // of allowList/denyList to AM commit (Phase 8). At Phase 2 a rule_body
+      // of { allowList: ['CA'], denyList: ['CA'] } parses without error and
+      // would land in the database. The Phase 4 evaluator handles overlap as
+      // "if allow non-empty: ∈ allow; if deny non-empty: ∉ deny" — for CA
+      // both conditions evaluate and the deny condition wins (CA fails). The
+      // deferred boundary is valid (AM commit is a reasonable enforcement
+      // point) but currently nothing tracks the deferral except a code
+      // comment. This test documents the intent so a future Phase 8 task
+      // that adds structural enforcement here will surface the change as a
+      // visible test failure rather than a silent behavior shift.
+      const body = { allowList: ['CA'], denyList: ['CA'] };
+      expect(geoStateSchema.parse(body)).toEqual(body);
+    });
   });
 
   describe('geoCountySchema (5-digit FIPS codes)', () => {
