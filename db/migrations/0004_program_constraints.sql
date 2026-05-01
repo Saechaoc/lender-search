@@ -43,13 +43,28 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- avoids casting an empty `'{}'::jsonb` to '0' — Phase 8's queue WHERE
 -- min_confidence < 0.85 should treat empty-body rows as missing data,
 -- not low-confidence.
+--
+-- Resilient filter (WR-02): only consider numeric-shaped values. Without
+-- this filter a stray non-numeric entry in field_confidence (e.g.
+-- {"flag": true} or {"x": "high"}) would raise "invalid input syntax for
+-- type numeric" inside the GENERATED ALWAYS AS STORED expression and
+-- reject the entire INSERT/UPDATE. Because field_confidence shape is not
+-- constrained by the rule_kind dispatch table (it's separate per-field
+-- metadata the extraction pipeline writes), a Phase 7 extractor regression
+-- could otherwise silently break every row write. Filtering to numeric-
+-- shaped values via regex skips non-numeric entries when computing the
+-- minimum; the comment header for field_confidence in Phase 7 should call
+-- out the contract ("numeric per-field score, 0.0–1.0") and the wrapper
+-- now degrades gracefully rather than blocking writes.
 CREATE OR REPLACE FUNCTION jsonb_min_numeric(j jsonb) RETURNS numeric
   LANGUAGE sql
   IMMUTABLE
   PARALLEL SAFE
   RETURNS NULL ON NULL INPUT
 AS $$
-  SELECT MIN((value)::numeric) FROM jsonb_each_text(j)
+  SELECT MIN((value)::numeric)
+  FROM jsonb_each_text(j)
+  WHERE value ~ '^-?[0-9]+(\.[0-9]+)?$'
 $$;
 
 -- Step 3 — min_confidence generated stored columns (D-10).
