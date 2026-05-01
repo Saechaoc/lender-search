@@ -86,12 +86,16 @@ AS $$
   UNION ALL
 
   -- derog_seasoning: overlay's base_waiting_months and
-  -- extenuating_circumstances_waiting_months must be >= agency.
+  -- extenuating_circumstances_waiting_months must be >= agency. Match on
+  -- event_type so BK7 overlay is compared only against BK7 agency, not against
+  -- FORECLOSURE agency (which would Cartesian-explode the JOIN once an agency
+  -- version holds multiple derog_seasoning rows — one per derogEventType).
   SELECT
     p.overlay_id, p.agency_id, p.rule_kind::text,
     p.agency_body, p.overlay_body
   FROM paired p
   WHERE p.rule_kind = 'derog_seasoning'
+    AND p.overlay_body->>'event_type' = p.agency_body->>'event_type'
     AND (
       COALESCE((p.overlay_body->>'base_waiting_months')::int, 0) <
         COALESCE((p.agency_body->>'base_waiting_months')::int, 0)
