@@ -65,22 +65,36 @@ AS $$
     )
   -- Numeric <= comparisons (overlay must be <= agency to count as restricting;
   -- overlay > agency means the overlay loosens — flag as loosening).
+  --
+  -- Structural guards: require both bodies to carry a 'value' key before the
+  -- ::numeric cast. Without these guards a malformed rule_body missing 'value'
+  -- yields NULL > NULL = NULL, the row is silently filtered, and the function
+  -- fails open (loosenings invisible to AM review). Upstream Zod parsing
+  -- catches this in the normal extraction path, but rule_body is only
+  -- structurally constrained to jsonb_typeof = 'object' at the DB layer
+  -- (migration 0004), so a direct admin INSERT or extractor regression could
+  -- land malformed rows.
   SELECT
     p.overlay_id, p.agency_id, p.rule_kind::text,
     p.agency_body, p.overlay_body
   FROM paired p
   WHERE p.rule_kind IN ('ltv_max', 'cltv_max', 'hcltv_max', 'dti_max')
+    AND p.overlay_body ? 'value'
+    AND p.agency_body ? 'value'
     AND (p.overlay_body->>'value')::numeric > (p.agency_body->>'value')::numeric
 
   UNION ALL
 
   -- Numeric >= comparisons (overlay must be >= agency; overlay < agency
-  -- means overlay loosens by lowering the floor).
+  -- means overlay loosens by lowering the floor). Same structural guards as
+  -- the <= branch above.
   SELECT
     p.overlay_id, p.agency_id, p.rule_kind::text,
     p.agency_body, p.overlay_body
   FROM paired p
   WHERE p.rule_kind IN ('fico_min', 'reserves_min')
+    AND p.overlay_body ? 'value'
+    AND p.agency_body ? 'value'
     AND (p.overlay_body->>'value')::numeric < (p.agency_body->>'value')::numeric
 
   UNION ALL
