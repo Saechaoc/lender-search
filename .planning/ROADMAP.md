@@ -12,8 +12,8 @@ Lender Search is built phase-by-phase along a single critical path: **schema cor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Tenant Isolation Foundation** - Postgres + RLS + CI pen-test suite enforcing zero cross-tenant egress before any tenant data exists *(2026-04-30 — verified human_needed; 3 GitHub-side UAT items pending)*
-- [ ] **Phase 2: Rule Schema** - Layered rule schema, structured derog model, bitemporal versioning, citation discipline as DB constraint
+- [x] **Phase 1: Tenant Isolation Foundation** - Postgres + RLS + CI pen-test suite enforcing zero cross-tenant egress before any tenant data exists *(2026-04-30 — UAT shipped PR #1)*
+- [x] **Phase 2: Rule Schema** - Layered rule schema, structured derog model, bitemporal versioning, citation discipline as DB constraint *(2026-05-04 — shipped PR #2)*
 - [ ] **Phase 3: Audit Log + Agency Rule Encoding** - Append-only `evaluation_event`, FNMA/FHLMC/FHA/VA hand-authored rule sets, agency cascade infrastructure
 - [ ] **Phase 4: Pure-TS Evaluation Engine** - Snapshot-based evaluator with derog state machine, near-miss, layer attribution; library-vs-custom spike resolved
 - [ ] **Phase 5: Golden Set + Phase 0 Exit Gates** - 200-scenario expert-validated golden set; Reducto acceptance test; precision/recall gates pass
@@ -121,7 +121,25 @@ Plans:
   3. The full FNMA B3-5.3-07 derog matrix is encoded as queryable rows: BK7 (4y / 2y EC), BK13 (2y discharged / 4y dismissed), multi-filing (5y / 7y), foreclosure (7y / 3y EC + 90% LTV cap window), DIL/short sale/charge-off (4y / 2y EC), mortgage-included-in-BK exception
   4. FHA HUD 4000.1 standard extenuating-circumstances provision is encoded; FHA Back-to-Work is marked `DEPRECATED` with `sunset: 2016-09-30` and is queryable but not active
   5. A new `agency_rule_version` insert fires a trigger that enqueues a `cascade.review` job for every `program_version` referencing the now-superseded agency version (verified via integration test)
-**Plans**: TBD
+**Plans**: 8 plans across 4 waves
+
+Plans:
+
+**Wave 0** *(blocks all later waves)*
+- [ ] 03-01-PLAN.md — Shared infra: types + audit/cascade lib + schema migrations (evaluation_event partitioned + REVOKE, cascade_review_queue + trigger, FHFA tables + EXCLUDE, program_version FK delta) + loader skeleton + CI/test wiring
+
+**Wave 1** *(blocked on Wave 0; plans run in parallel)*
+- [ ] 03-02-PLAN.md — FNMA B3-5.3-07 derog matrix (8 event types + golden snapshot); seeds AGY-01 cross-agency test scaffold
+- [ ] 03-03-PLAN.md — FHLMC §5202.5 derog matrix (8 event types incl. FC_CLOCK_ALWAYS + golden snapshot)
+- [ ] 03-04-PLAN.md — FHA HUD 4000.1 derog (7 active types, MULTIPLE_BK skipped per Open Question 5) + Back-to-Work DEPRECATED with sunset 2016-09-30
+- [ ] 03-05-PLAN.md — VA Pamphlet 26-7 derog (7 active types) + completes AGY-01 cross-agency assertions
+
+**Wave 2** *(blocked on Wave 1; plans run in parallel)*
+- [ ] 03-06-PLAN.md — FHFA 2026 conforming loan limits CSV + csv-parse loader extension + structural / FK / idempotency tests
+- [ ] 03-07-PLAN.md — Cascade trigger integration test (D-17 SC#5) + cascade_review_queue cross-tenant pen tests + seedTwoTenantsWithProgramVersions helper
+
+**Wave 3** *(blocked on Wave 2; sequential gate)*
+- [ ] 03-08-PLAN.md — [BLOCKING] Phase 3 integration gate — full reset/migrate/seed/test:rls/test:schema/typecheck/lint cycle + structural state introspection + human-verify checkpoint
 **UI hint**: no
 
 ### Phase 4: Pure-TS Evaluation Engine
@@ -282,8 +300,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Tenant Isolation Foundation | 8/8 | Complete (human_needed UAT pending) | 2026-04-30 |
-| 2. Rule Schema | 8/9 | In Progress|  |
+| 1. Tenant Isolation Foundation | 8/8 | Complete | 2026-04-30 |
+| 2. Rule Schema | 9/9 | Complete | 2026-05-04 |
 | 3. Audit Log + Agency Rule Encoding | 0/TBD | Not started | - |
 | 4. Pure-TS Evaluation Engine | 0/TBD | Not started | - |
 | 5. Golden Set + Phase 0 Exit Gates | 0/TBD | Not started | - |
