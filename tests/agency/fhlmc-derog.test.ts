@@ -128,9 +128,11 @@ describe('FHLMC derog matrix (Phase 3 SC#3 / AGY-03)', () => {
       const hash = createHash('sha256')
         .update(JSON.stringify(sortedBodies))
         .digest('hex');
-      // RED phase: this placeholder fails on first run; capture the actual
-      // computed hash from the failure message and lock it in below.
-      expect(hash).toBe('TBD-LOCK-ON-FIRST-COMMIT');
+      // Golden snapshot regression hash. Locked-in during the GREEN phase of
+      // Plan 03-03 Task 3 (TDD-Phase: green). If this assertion fails, an edit
+      // to lib/agency-seeds/fhlmc/derog-seasoning.ts has changed the seeded
+      // bundle — re-run, inspect the diff, and bump the hash deliberately.
+      expect(hash).toBe('e69f8f8cecbe18b699a194ca8286a87638bb6fa5f8b7ab020f9dc91134febb2e');
     } finally {
       adminClient.release();
     }
