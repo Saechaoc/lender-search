@@ -195,7 +195,11 @@ describe('FNMA derog matrix (Phase 3 SC#3 / AGY-02)', () => {
       // First-author runs the test once with placeholder, captures actual computed
       // hash from the failure message, then commits it here. The golden hash is
       // updated only on intentional rule-content changes (regression sentry).
-      expect(hash).toBe('TBD-LOCK-ON-FIRST-COMMIT');
+      // Locked golden hash. The seeded rule_body bundle is sorted by
+      // (event_type, post_event_LTV_caps[0].purposeAllowList) and
+      // sha256-hashed. Update this hash ONLY when intentionally
+      // changing a FNMA rule (e.g., new Selling Guide effective date).
+      expect(hash).toBe('71b24015b029b0f07ebbcc8f84c78a26c75c7835488d64fac5670f7230f7e201');
     } finally {
       adminClient.release();
     }
