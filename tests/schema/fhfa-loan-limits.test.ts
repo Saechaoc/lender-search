@@ -5,8 +5,13 @@
  *   - conforming_loan_limit_version EXCLUDE on (year WITH =, effective_period WITH &&).
  *   - conforming_loan_limit_county composite PK on (limit_version_id, county_fips).
  *   - program_version.conforming_loan_limit_version_id FK exists and is nullable.
- *
- * Loader idempotency tests land in Plan 03-07 once the FHFA CSV loader exists.
+ *   - Plan 03-06: seedFhfaYear loader populates ~3,200 county rows for year 2026
+ *     with FIPS leading zeros preserved + is_high_cost derived against the
+ *     $832,750 baseline + idempotent re-runs (Open Question 7 / D-23).
+ *   - Plan 03-06 / REVIEWS.md B10: open-ended versions detected via
+ *     `upper_inf(effective_period)` — the canonical PostgreSQL daterange
+ *     function — NOT `upper(effective_period::text) = 'infinity'` text
+ *     comparison.
  *
  * Per iter-2 REVIEWS B10 fix: tests use realistic year ranges (2090-2199) not
  * synthetic 5,000,000+ values that overflow Postgres's date max (5874897 AD).
@@ -108,6 +113,175 @@ describe('program_version conforming FK (AGY-09 / D-22)', () => {
       );
       expect(rows).toHaveLength(1);
       expect(rows[0]?.def).toMatch(/REFERENCES conforming_loan_limit_version\(id\)/);
+    } finally {
+      adminClient.release();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Plan 03-06 / Task 02 — FHFA 2026 loader behavior tests.
+//
+// The setup beforeAll hook in tests/schema/setup.ts runs `pnpm db:seed`, which
+// invokes seedFhfaYear(2026, …) against the committed CSV at
+// lib/agency-seeds/fhfa/2026-conforming-limit-values-by-county.csv. These tests
+// assert the seeded state.
+//
+// While seedFhfaYear is a no-op (Wave 0 scaffold) these tests fail RED.
+// Plan 03-06 Task 02 GREEN replaces the body and the tests turn green.
+// ---------------------------------------------------------------------------
+
+describe('FHFA 2026 loader produces expected row counts (AGY-09)', () => {
+  it('seeds exactly 1 conforming_loan_limit_version row for year 2026', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ count: string; effective_period: string }>(
+        `SELECT count(*)::text AS count, MIN(effective_period::text) AS effective_period
+         FROM conforming_loan_limit_version WHERE year = 2026`,
+      );
+      expect(rows[0]?.count).toBe('1');
+      expect(rows[0]?.effective_period).toBe('[2026-01-01,infinity)');
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('upper_inf(effective_period) correctly identifies the open-ended 2026 version (REVIEWS B10)', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ year: number; is_open_ended: boolean }>(
+        `SELECT year, upper_inf(effective_period) AS is_open_ended
+         FROM conforming_loan_limit_version WHERE year = 2026`,
+      );
+      expect(rows[0]?.year).toBe(2026);
+      expect(rows[0]?.is_open_ended).toBe(true);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('seeds 3,000-3,300 conforming_loan_limit_county rows for 2026', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+         FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )`,
+      );
+      const count = parseInt(rows[0]!.count, 10);
+      expect(count).toBeGreaterThanOrEqual(3000);
+      expect(count).toBeLessThanOrEqual(3300);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('preserves FIPS leading zeros (Pitfall PG-7) — Alabama county_fips starts with 01', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ county_fips: string; state_code: string }>(
+        `SELECT county_fips, state_code FROM conforming_loan_limit_county
+          WHERE state_code = 'AL'
+          ORDER BY county_fips
+          LIMIT 1`,
+      );
+      expect(rows[0]?.county_fips).toMatch(/^01\d{3}$/);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('spot-checks Los Angeles County (06037 / one_unit=1,249,125 / high-cost)', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ one_unit: string; is_high_cost: boolean; state: string }>(
+        `SELECT one_unit_baseline::text AS one_unit, is_high_cost, state_code AS state
+         FROM conforming_loan_limit_county
+         WHERE county_fips = '06037'
+           AND limit_version_id = (
+             SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+           )`,
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.state).toBe('CA');
+      expect(parseInt(rows[0]!.one_unit, 10)).toBe(1249125);
+      expect(rows[0]?.is_high_cost).toBe(true);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('spot-checks Autauga County AL (01001 / one_unit=832,750 / NOT high-cost)', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ one_unit: string; is_high_cost: boolean; state: string }>(
+        `SELECT one_unit_baseline::text AS one_unit, is_high_cost, state_code AS state
+         FROM conforming_loan_limit_county
+         WHERE county_fips = '01001'
+           AND limit_version_id = (
+             SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+           )`,
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.state).toBe('AL');
+      expect(parseInt(rows[0]!.one_unit, 10)).toBe(832750);
+      expect(rows[0]?.is_high_cost).toBe(false);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('spot-checks Honolulu County HI (15003 / one_unit=1,249,125 / high-cost)', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ one_unit: string; is_high_cost: boolean; state: string }>(
+        `SELECT one_unit_baseline::text AS one_unit, is_high_cost, state_code AS state
+         FROM conforming_loan_limit_county
+         WHERE county_fips = '15003'
+           AND limit_version_id = (
+             SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+           )`,
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.state).toBe('HI');
+      expect(parseInt(rows[0]!.one_unit, 10)).toBe(1249125);
+      expect(rows[0]?.is_high_cost).toBe(true);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('is_high_cost derived at load time (Open Question 7); ≥50 high-cost counties exist', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ high_cost_count: string; max_one_unit: string }>(
+        `SELECT
+           count(*) FILTER (WHERE is_high_cost = true)::text AS high_cost_count,
+           max(one_unit_baseline)::text AS max_one_unit
+         FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )`,
+      );
+      expect(parseInt(rows[0]!.high_cost_count, 10)).toBeGreaterThanOrEqual(50);
+      expect(parseInt(rows[0]!.max_one_unit, 10)).toBeGreaterThan(1000000);
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('is_high_cost is FALSE when one_unit_baseline = 832750 (national baseline)', async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ is_high_cost: boolean }>(
+        `SELECT is_high_cost FROM conforming_loan_limit_county
+          WHERE one_unit_baseline = 832750
+          LIMIT 1`,
+      );
+      expect(rows.length).toBeGreaterThanOrEqual(1);
+      expect(rows[0]?.is_high_cost).toBe(false);
     } finally {
       adminClient.release();
     }
