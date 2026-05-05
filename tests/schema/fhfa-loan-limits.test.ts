@@ -132,7 +132,15 @@ describe('program_version conforming FK (AGY-09 / D-22)', () => {
 // ---------------------------------------------------------------------------
 
 describe('FHFA 2026 loader produces expected row counts (AGY-09)', () => {
-  it('seeds exactly 1 conforming_loan_limit_version row for year 2026', async () => {
+  it('seeds exactly 1 conforming_loan_limit_version row for year 2026 with unbounded upper', async () => {
+    // REVIEWS.md B10: the canonical text form for a daterange with truly
+    // unbounded upper (the form for which upper_inf=true) is `[2026-01-01,)`,
+    // NOT `[2026-01-01,infinity)`. The two forms are semantically distinct:
+    //   `[2026-01-01,infinity)` = upper bounded by the date type's +infinity
+    //                              sentinel; upper_inf returns false
+    //   `[2026-01-01,)`         = unbounded upper; upper_inf returns true
+    // The FHFA loader emits the unbounded form so the B10 mandate (next test)
+    // can hold.
     const adminClient = await globalThis.__pgAdminPool.connect();
     try {
       const { rows } = await adminClient.query<{ count: string; effective_period: string }>(
@@ -140,7 +148,7 @@ describe('FHFA 2026 loader produces expected row counts (AGY-09)', () => {
          FROM conforming_loan_limit_version WHERE year = 2026`,
       );
       expect(rows[0]?.count).toBe('1');
-      expect(rows[0]?.effective_period).toBe('[2026-01-01,infinity)');
+      expect(rows[0]?.effective_period).toBe('[2026-01-01,)');
     } finally {
       adminClient.release();
     }

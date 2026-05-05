@@ -31,8 +31,11 @@
  * Loader defense-in-depth (A2): citation URLs are validated against
  *   /^https?:\/\// before INSERT.
  */
+import { readFile } from 'node:fs/promises';
 import { config as loadDotenv } from 'dotenv';
+import { parse } from 'csv-parse/sync';
 import { Pool, type PoolClient } from 'pg';
+import { z } from 'zod';
 import { parseRuleBody, type RuleKind } from '../lib/rules/schemas/index.js';
 import type { AgencyRuleSeed } from '../lib/agency-seeds/types.js';
 
@@ -189,13 +192,160 @@ export async function seedAgencyVersionAndRules(input: SeedAgencyVersionInput): 
   }
 }
 
+// FHFA 2026 baseline per Assumption A5 — the threshold above which is_high_cost=true.
+// Open Question 7: is_high_cost is stored at load time (not derived at read time)
+// because the threshold is a function of the FHFA-published year-specific baseline,
+// and storing it lets readers JOIN/filter without recomputing.
+const FHFA_2026_ONE_UNIT_BASELINE = 832750;
+
 /**
- * FHFA loader skeleton — Plan 03-07 wires the real CSV parse + per-row Zod
- * + batch INSERT path. Wave 0 ships the no-op so `pnpm db:seed` succeeds.
+ * Plan 03-06 Rule 1 deviation #1: the actual FHFA CSV's column names contain
+ * embedded NEWLINES (e.g. `"One-Unit\nLimit"`) because the published file wraps
+ * the headers across two lines inside quoted cells. csv-parse preserves the
+ * newline in the column key. The plan-supplied schema used single-space
+ * `"One-Unit Limit"` which never matches; we use the literal newline form.
+ *
+ * Plan 03-06 Rule 1 deviation #2: the limit columns are formatted strings like
+ * `"$832,750 "` (dollar sign + thousand-separator commas + trailing space).
+ * `z.coerce.number()` directly on these yields NaN. We strip `$`, `,`, and
+ * whitespace BEFORE coercion via `.transform`.
  */
-export async function seedFhfaYear(_year: number, _csvPath: string): Promise<void> {
-  // Plan 03-07 implements: read CSV via csv-parse, Zod-validate each row,
-  // two-step daterange close on prior version, batch INSERT into
-  // conforming_loan_limit_county.
-  return;
+const formattedDollarsToInt = (raw: string): number => {
+  const cleaned = raw.replace(/[$,\s]/g, '');
+  const parsed = Number.parseInt(cleaned, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Invalid dollar value: ${JSON.stringify(raw)}`);
+  }
+  return parsed;
+};
+
+const fhfaRowSchema = z.object({
+  'FIPS State Code': z.string().regex(/^\d{1,2}$/, 'expected 1-2 digit state FIPS').transform((s) => s.padStart(2, '0')),
+  'FIPS County Code': z.string().regex(/^\d{1,3}$/, 'expected 1-3 digit county FIPS').transform((s) => s.padStart(3, '0')),
+  'County Name': z.string().min(1).max(120),
+  'State': z.string().length(2),
+  'CBSA Number': z.string().regex(/^\d{0,5}$/, 'expected 0-5 digit CBSA').optional().nullable(),
+  // Newline-named columns (see deviation #1 above). transform() handles formatted dollars (deviation #2).
+  'One-Unit\nLimit': z.string().transform(formattedDollarsToInt),
+  'Two-Unit\nLimit': z.string().transform(formattedDollarsToInt).optional().nullable(),
+  'Three-Unit\nLimit': z.string().transform(formattedDollarsToInt).optional().nullable(),
+  'Four-Unit\nLimit': z.string().transform(formattedDollarsToInt).optional().nullable(),
+});
+
+/**
+ * seedFhfaYear — extends the Plan 03-01 skeleton with the real CSV-parse +
+ *   Zod-validate + per-row INSERT path. Per D-23 two-step daterange close
+ *   convention. Idempotent via INSERT ... ON CONFLICT DO NOTHING on both
+ *   the version row (year UNIQUE-by-EXCLUDE) and the county row (composite PK).
+ *
+ * Per REVIEWS.md B10: open-ended versions are detected via
+ *   `upper_inf(effective_period)` — the canonical PostgreSQL daterange function
+ *   — NOT `upper(effective_period::text) = 'infinity'` which is fragile text
+ *   comparison and breaks if Postgres ever changes the canonical text form.
+ *
+ * Per Open Question 7 + Assumption A5: is_high_cost is computed at load time
+ *   as `one_unit_baseline > $832,750` (the FHFA 2026 baseline). Stored, not
+ *   derived — readers do not recompute.
+ */
+export async function seedFhfaYear(year: number, csvPath: string): Promise<void> {
+  const baseline = year === 2026 ? FHFA_2026_ONE_UNIT_BASELINE : null;
+  if (baseline === null) {
+    throw new Error(`seedFhfaYear: no baseline configured for year ${year} (Open Question 7 — extend FHFA_*_ONE_UNIT_BASELINE constants when FHFA publishes a new annual table).`);
+  }
+
+  const csvBytes = await readFile(csvPath);
+  // Pitfall PG-7: bom: true strips the UTF-8 BOM if present.
+  // columns: true emits objects keyed by header (header lives across two
+  //   physical lines of the file but is one logical CSV header — csv-parse
+  //   handles the multiline-quoted header and yields keys with embedded \n).
+  // skip_empty_lines: true protects against trailing blank lines from Excel.
+  const records = parse(csvBytes, {
+    columns: true,
+    bom: true,
+    trim: true,
+    skip_empty_lines: true,
+  }) as unknown[];
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // D-23 two-step daterange close convention: when this loader runs for year
+    // N, any prior open-ended version (year < N) is closed at [its-lower,
+    // ${year}-01-01). REVIEWS.md B10 — use upper_inf() instead of fragile text
+    // comparison.
+    await client.query(
+      `UPDATE conforming_loan_limit_version
+         SET effective_period = daterange(lower(effective_period), $1::date, '[)')
+       WHERE upper_inf(effective_period)
+         AND year < $2`,
+      [`${year}-01-01`, year],
+    );
+
+    // Get-or-create version row keyed on year. The EXCLUDE constraint enforces
+    // year-uniqueness over overlapping effective_periods, so a duplicate
+    // attempt would raise — instead we look up existing first.
+    let versionId: string;
+    const existing = await client.query<{ id: string }>(
+      `SELECT id::text FROM conforming_loan_limit_version WHERE year = $1 LIMIT 1`,
+      [year],
+    );
+    if (existing.rows[0]) {
+      versionId = existing.rows[0].id;
+    } else {
+      // REVIEWS.md B10 + Plan 03-06 Rule 1 deviation #3: insert with TRULY
+      // unbounded upper (`[YYYY-01-01,)`) so `upper_inf(effective_period)`
+      // returns true. PostgreSQL distinguishes `'[YYYY-01-01,infinity)'`
+      // (bounded by the date type's +infinity sentinel; upper_inf=false)
+      // from `'[YYYY-01-01,)'` (unbounded; upper_inf=true). The text form
+      // canonicalizes to `[YYYY-01-01,)`. Wave 0/1 agency seeds keep the
+      // legacy `infinity` form because their daterange-close detection uses
+      // text comparison; FHFA is where B10's upper_inf mandate actually
+      // lands.
+      const created = await client.query<{ id: string }>(
+        `INSERT INTO conforming_loan_limit_version (year, effective_period, source_url)
+         VALUES ($1, $2::daterange, $3)
+         RETURNING id::text`,
+        [
+          year,
+          `[${year}-01-01,)`,
+          'https://www.fhfa.gov/data/conforming-loan-limit',
+        ],
+      );
+      versionId = created.rows[0]!.id;
+    }
+
+    // Per-row Zod validation + INSERT.
+    for (const raw of records) {
+      const row = fhfaRowSchema.parse(raw);
+      const countyFips = `${row['FIPS State Code']}${row['FIPS County Code']}`;
+      const oneUnit = row['One-Unit\nLimit'];
+      const isHighCost = oneUnit > baseline;
+
+      await client.query(
+        `INSERT INTO conforming_loan_limit_county (
+           limit_version_id, county_fips, state_code,
+           one_unit_baseline, two_unit_baseline, three_unit_baseline, four_unit_baseline,
+           is_high_cost
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (limit_version_id, county_fips) DO NOTHING`,
+        [
+          versionId, countyFips, row['State'],
+          oneUnit,
+          row['Two-Unit\nLimit'] ?? null,
+          row['Three-Unit\nLimit'] ?? null,
+          row['Four-Unit\nLimit'] ?? null,
+          isHighCost,
+        ],
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* swallow */ }
+    throw err;
+  } finally {
+    client.release();
+  }
 }
