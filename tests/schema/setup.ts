@@ -43,6 +43,24 @@ beforeAll(async () => {
     connectionString: ADMIN_URL,
     max: 3,
   });
+
+  // Phase 3 / D-06: ensure agency seeds + FHFA loan limits are loaded.
+  // Idempotent (ON CONFLICT DO NOTHING / INSERT WHERE NOT EXISTS) so
+  // re-running across test suites is a structural no-op when state is
+  // current. The schema test suite runs after rls (per package.json
+  // script ordering) but vitest.schema.config.ts has no globalSetup;
+  // calling here defensively keeps the suite self-contained.
+  const { execFileSync } = await import('node:child_process');
+  try {
+    execFileSync('pnpm', ['db:seed'], {
+      stdio: 'inherit',
+      env: { ...process.env, DATABASE_MIGRATION_URL: ADMIN_URL },
+    });
+  } catch (err) {
+    throw new Error(
+      `tests/schema setup: pnpm db:seed failed. Original: ${(err as Error).message}`,
+    );
+  }
 });
 
 afterAll(async () => {

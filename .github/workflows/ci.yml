@@ -113,6 +113,15 @@ jobs:
             -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;"
 
+      # Phase 3 / Plan 03-01 Task 06 (D-06): seed loader runs after migrate so
+      # agency rule rows exist before the schema + RLS suites. The DATABASE_MIGRATION_URL
+      # below is a literal localhost connection string (no GitHub event-context
+      # interpolation), so this step is safe by construction.
+      - name: Run agency seed loader (Phase 3 D-06)
+        env:
+          DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/lender_search_test
+        run: pnpm db:seed
+
       - name: Verify FORCE ROW LEVEL SECURITY is on (TNT-01 gate)
         env:
           PGPASSWORD: postgres

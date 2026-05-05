@@ -106,6 +106,22 @@ export default async function globalSetup(): Promise<void> {
     );
   }
 
+  // Step 2.5: Run the agency seed loader (Phase 3 / D-06).
+  // Idempotent — safe to re-run on every test setup. Connects via
+  // DATABASE_MIGRATION_URL (postgres superuser; system_role GRANTed).
+  // Wave 0 produces the USDA stub agency_rule_version row only; Wave 1
+  // plans 03-02..03-05 swap stub bodies with real seeds.
+  try {
+    execFileSync('pnpm', ['db:seed'], {
+      stdio: 'inherit',
+      env: { ...process.env, DATABASE_MIGRATION_URL: MIGRATION_DB_URL },
+    });
+  } catch (err) {
+    throw new Error(
+      `globalSetup: pnpm db:seed failed. Phase 3 agency rules + FHFA loan limits failed to load. Original: ${(err as Error).message}`,
+    );
+  }
+
   // Step 3: GRANT DML on Phase 1 + Phase 2 tenant-scoped tables to app_user.
   // The 0003 + 0006 migrations already include these GRANTs, but issuing
   // again is idempotent and protects against future migration regressions.
