@@ -135,8 +135,8 @@ Plans:
 - [x] 03-05-PLAN.md — VA Pamphlet 26-7 derog (7 active types) + completes AGY-01 cross-agency assertions
 
 **Wave 2** *(blocked on Wave 1; plans run in parallel)*
-- [ ] 03-06-PLAN.md — FHFA 2026 conforming loan limits CSV + csv-parse loader extension + structural / FK / idempotency tests
-- [ ] 03-07-PLAN.md — Cascade trigger integration test (D-17 SC#5) + cascade_review_queue cross-tenant pen tests + seedTwoTenantsWithProgramVersions helper
+- [x] 03-06-PLAN.md — FHFA 2026 conforming loan limits CSV + csv-parse loader extension + structural / FK / idempotency tests
+- [x] 03-07-PLAN.md — Cascade trigger integration test (D-17 SC#5) + cascade_review_queue cross-tenant pen tests + seedTwoTenantsWithProgramVersions helper
 
 **Wave 3** *(blocked on Wave 2; sequential gate)*
 - [ ] 03-08-PLAN.md — [BLOCKING] Phase 3 integration gate — full reset/migrate/seed/test:rls/test:schema/typecheck/lint cycle + structural state introspection + human-verify checkpoint
