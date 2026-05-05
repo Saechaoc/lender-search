@@ -17,6 +17,7 @@
     "db:migrate": "drizzle-kit migrate",
     "test:rls": "vitest run --config vitest.config.ts",
     "test:rls:watch": "vitest --config vitest.config.ts",
+    "test:schema": "vitest run --config vitest.schema.config.ts",
     "lint": "eslint . --ignore-pattern 'app/.eslint-fixture.ts'",
     "lint:fixture": "eslint app/.eslint-fixture.ts && exit 1 || exit 0",
     "typecheck": "tsc --noEmit"

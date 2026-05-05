@@ -67,14 +67,31 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Provision app_user role (NOBYPASSRLS NOSUPERUSER)
+      - name: Provision app_user + system_role (replicates scripts/init-db.sh for CI)
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d lender_search_test \
-            -c "CREATE ROLE app_user LOGIN PASSWORD 'app_user_password' NOBYPASSRLS NOSUPERUSER;
-                GRANT CONNECT ON DATABASE lender_search_test TO app_user;
-                GRANT USAGE ON SCHEMA public TO app_user;"
+          psql -h localhost -U postgres -d lender_search_test -v ON_ERROR_STOP=1 <<'SQL'
+            -- app_user (NOBYPASSRLS NOSUPERUSER) — used by tests as the tenant-scoped role.
+            CREATE ROLE app_user LOGIN PASSWORD 'app_user_password' NOBYPASSRLS NOSUPERUSER;
+            GRANT CONNECT ON DATABASE lender_search_test TO app_user;
+            GRANT USAGE ON SCHEMA public TO app_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO app_user;
+
+            -- Phase 2 Plan 02-01: system_role for agency-table writes.
+            -- Migrations 0002 lines 127/129 reference TO "system_role"; migrate aborts if absent.
+            DO $$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'system_role') THEN
+                CREATE ROLE system_role NOLOGIN NOBYPASSRLS NOSUPERUSER;
+              END IF;
+            END
+            $$;
+            GRANT system_role TO postgres;
+            GRANT CONNECT ON DATABASE lender_search_test TO system_role;
+            GRANT USAGE ON SCHEMA public TO system_role;
+          SQL
 
       - name: Typecheck
         run: pnpm typecheck
@@ -92,8 +109,8 @@ jobs:
           PGPASSWORD: postgres
         run: |
           pnpm drizzle-kit migrate
-          psql -h localhost -U postgres -d lender_search_test \
-            -c "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tenant, _rls_canary TO app_user;
+          psql -h localhost -U postgres -d lender_search_test -v ON_ERROR_STOP=1 \
+            -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;"
 
       - name: Verify FORCE ROW LEVEL SECURITY is on (TNT-01 gate)
@@ -107,6 +124,9 @@ jobs:
           echo "$FORCED"
           echo "$FORCED" | grep -q "^_rls_canary|t$" || { echo "ERROR: _rls_canary FORCE RLS not on"; exit 1; }
           echo "$FORCED" | grep -q "^tenant|t$" || { echo "ERROR: tenant FORCE RLS not on"; exit 1; }
+
+      - name: Run schema constraint suite (Phase 2 D-20 + D-10)
+        run: pnpm test:schema
 
       - name: Run RLS pen-test suite (TNT-04 merge gate)
         run: pnpm test:rls

@@ -15,6 +15,41 @@
       "when": 1777559100645,
       "tag": "0001_force_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777577670312,
+      "tag": "0002_program_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777577686880,
+      "tag": "0003_force_rls_program",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777577734817,
+      "tag": "0004_program_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777578313271,
+      "tag": "0005_force_rls_agency",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777578328190,
+      "tag": "0006_detect_loosenings",
+      "breakpoints": true
     }
   ]
 }

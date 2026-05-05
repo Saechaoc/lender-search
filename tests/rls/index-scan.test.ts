@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { connectAsTenant } from './fixtures/connection.js';
-import { seedTwoTenants } from './fixtures/tenants.js';
+import { seedTwoTenants } from './seedTwoTenants.js';
 
 describe('TNT-03: tenant_id index on _rls_canary', () => {
   it('rls_canary_tenant_idx exists in pg_indexes', async () => {

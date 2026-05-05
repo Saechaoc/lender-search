@@ -14,18 +14,18 @@ An eligibility-first lender/program search tool for mortgage loan officers. An L
 
 ### Validated
 
-(None yet — ship to validate. Existing React prototype is being rebuilt from scratch; nothing in the current `src/App.js` carries forward as a validated capability.)
+- [x] **Tenant isolation foundation (RLS + FORCE)** — Validated in ROADMAP Phase 1 (tenant-isolation-foundation). FORCE ROW LEVEL SECURITY on `tenant`, `_rls_canary`; pen-test harness with cross-tenant SELECT/INSERT/UPDATE/DELETE matrix; CI gate enforced.
+- [x] **Rule schema with explicit `layer` field** — Validated in ROADMAP Phase 2 (rule-schema). `program_rule.layer` pgEnum (AGENCY_BASE | INVESTOR_OVERLAY | LENDER_OVERLAY); `lender_overlay_rule` separate table; "most restrictive wins" deferred to Phase 4 evaluator.
+- [x] **Structured derogatory-event model** — Validated in ROADMAP Phase 2. `DerogSeasoning` Zod schema with `event_type`, `measurement_anchor`, `base_waiting_months`, `ec_waiting_months`, `post_event_ltv_caps[]`, `re_established_credit_required`, `mortgage_included_in_bk`. FNMA SC#2 foreclosure fixture round-trips through schema. (Note: FHA Back to Work DEPRECATED encoding deferred to Phase 3 hand-authoring.)
+- [x] **Per-ProgramVersion source-document fingerprint and effective_date** — Validated in ROADMAP Phase 2. `program_version.source_document_fingerprint NOT NULL`; `effective_period daterange` with EXCLUDE USING gist preventing overlapping active versions.
+- [x] **Per-field confidence score persisted on every extracted rule** — Validated in ROADMAP Phase 2. `program_rule.field_confidence jsonb` + `min_confidence numeric GENERATED ALWAYS AS (jsonb_min_numeric(field_confidence)) STORED`.
+- [x] **Citation discipline as a hard schema constraint** — Validated in ROADMAP Phase 2. `program_rule.primary_citation_id` NOT NULL FK to `rule_citation(id)`; rules without a citation cannot persist (database constraint, not application validation). Server-side textSpan-bbox validation deferred to Phase 7 extraction pipeline.
 
 ### Active
 
 **Phase 0 — Schema and golden set (foundation, no customer-visible product)**
 
-- [ ] Rule schema with explicit `layer` field (`AGENCY_BASE` / `INVESTOR_OVERLAY` / `PRODUCT_FEATURE` / `LENDER_OVERLAY`) and "most restrictive wins" conflict resolution
-- [ ] Structured derogatory-event model (BK7, BK13 discharged/dismissed, multi-filing, foreclosure, DIL, short sale, mortgage charge-off, modification, forbearance) with measurement anchor, base waiting months, extenuating-circumstances waiting months, post-event LTV cap windows (FNMA's 3-to-7-year post-foreclosure 90% LTV / primary-purchase-or-rate-and-term-only window encoded explicitly, not paraphrased), re-established-credit requirement, mortgage-included-in-BK rule. (Note: FHA "Back to Work — Extenuating Circumstances" was discontinued 2016-09-30 by Mortgagee Letter 2016-14. Encoded as DEPRECATED with sunset date 2016-09-30; standard HUD 4000.1 extenuating-circumstances provision remains. Extraction pipeline rejects rules referencing Back to Work from post-2016 source documents.)
 - [ ] Encoded agency base rule sets: FNMA, FHLMC, FHA, VA (USDA deferred to Phase 2)
-- [ ] Per-`ProgramVersion` source-document fingerprint and `effective_date` for auditability
-- [ ] Per-field confidence score persisted on every extracted rule
-- [ ] Citation discipline as a hard schema constraint: rules without `sourceCitation` (page + bbox + textSpan) cannot persist; server-side post-extraction validation that `textSpan` actually appears in the cited PDF page at the specified bbox before any rule lands in staging
 - [ ] 200-scenario golden test set with ≥1 paid external expert reviewer (senior underwriter); scenarios sourced 50% from real anonymized broker-shop LO outreach + 25% from incumbent public examples + 25% from constructed adversarial cases (specifically designed to break boolean derog handling); expected outcomes lock with citations to FNMA Selling Guide / lender matrix / Mortgagee Letter (not to the evaluator); scenarios locked before evaluator runs against them. Self-selection bias is the existential Phase 0 risk; external validation is non-negotiable.
 - [ ] Agency-rule cascade: agency rules versioned; programs reference an agency version; an agency update creates a system-level review queue
 - [ ] Eligibility evaluator that returns categorized result: `eligible` / `near-miss` / `ineligible`, with the deciding rule, its layer, and the full rule stack
@@ -177,4 +177,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-29 after research synthesis (4-stream parallel research + SUMMARY.md)*
+*Last updated: 2026-04-30 after Phase 2 (rule-schema) completion — 9 plans, 7 migrations, 27 schema/RLS test files, 142 tests green; 5 requirements moved to Validated.*

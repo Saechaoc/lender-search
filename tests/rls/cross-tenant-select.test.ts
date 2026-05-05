@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { connectAsAnonymous, connectAsTenant } from './fixtures/connection.js';
-import { seedTwoTenants } from './fixtures/tenants.js';
+import { seedTwoTenants } from './seedTwoTenants.js';
 
 describe('RLS: cross-tenant SELECT', () => {
   it('returns 0 rows when GUC is set to Tenant A and query targets Tenant B', async () => {
