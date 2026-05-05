@@ -21,6 +21,12 @@ export default defineConfig({
     sequence: { concurrent: false },
     testTimeout: 10_000,
     hookTimeout: 10_000,
-    include: ['tests/schema/**/*.test.ts', 'tests/rules/**/*.test.ts'],
+    include: [
+      'tests/schema/**/*.test.ts',
+      'tests/rules/**/*.test.ts',
+      'tests/audit/**/*.test.ts',
+      'tests/agency/**/*.test.ts',
+      'tests/cascade/**/*.test.ts',
+    ],
   },
 });
