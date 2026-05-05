@@ -30,7 +30,7 @@
  * The Plan 01-06 baseline at fixtures/tenants.ts was relocated by Plan 02-09
  * as a Rule 3 deviation (plan-mandated path doesn't match Phase 1 layout).
  */
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { seedAgencyVersion } from '../_shared/agency-fixture.js';
 
 export interface SeedResult {
@@ -202,6 +202,109 @@ export async function seedTwoTenants(
     citationA: a.citationId,
     citationB: b.citationId,
   };
+}
+
+/**
+ * Phase 3 / Plan 03-07 cascade-test variant.
+ *
+ * Per REVIEWS.md B6: this helper accepts an EXISTING pg.PoolClient and
+ *   NEVER calls BEGIN/COMMIT/ROLLBACK. The caller's enclosing transaction
+ *   owns the lifecycle. This guarantees that cascade tests using ROLLBACK
+ *   at the end leave the cascade_review_queue empty for subsequent tests
+ *   (no flaky 4/6/8-row results from leaked uncommitted seed data).
+ *
+ * Per Pitfall PG-9: skips rule_citation + program_rule. The cascade trigger
+ *   JOINs program_version ONLY (not agency_rule), so rule rows are
+ *   irrelevant — and including them would (a) trip the partial unique
+ *   index on rule_citation in repeated runs and (b) inflate the per-test
+ *   setup cost.
+ *
+ * Per REVIEWS.md B10: program_version effective_period uses realistic
+ *   synthetic year (2150-2180 range). Within PostgreSQL date type bounds;
+ *   far from any real Wave 1 [2026-01-01,infinity) seed; collision-free
+ *   across rerun cycles within an admin BEGIN/ROLLBACK envelope.
+ */
+export interface CascadeSeedResult {
+  tenantA: string;
+  tenantB: string;
+  priorAgencyRuleVersionId: string;
+  programVersionA: string;
+  programVersionB: string;
+}
+
+/**
+ * Cascade-test variant: seed 2 tenants + 1 program_version per tenant, both FK'd to
+ * a CALLER-SPECIFIED prior agency_rule_version. Skips rule_citation + program_rule
+ * (cascade trigger JOINs program_version ONLY per Pitfall PG-9).
+ *
+ * Per REVIEWS.md B6: this helper accepts an EXISTING pg.PoolClient and NEVER calls
+ *   BEGIN/COMMIT/ROLLBACK. The caller's enclosing transaction owns the lifecycle.
+ *   This guarantees that cascade tests using ROLLBACK at the end leave the
+ *   cascade_review_queue empty for subsequent tests (no flaky leaked rows).
+ */
+export async function seedTwoTenantsWithProgramVersions(
+  client: PoolClient,
+  priorAgencyRuleVersionId: string,
+): Promise<CascadeSeedResult> {
+  // Caller owns BEGIN; we just emit INSERTs against the provided client.
+  const a = await seedOneTenantProgramVersionOnly(client, priorAgencyRuleVersionId, 'CASCADE-A');
+  const b = await seedOneTenantProgramVersionOnly(client, priorAgencyRuleVersionId, 'CASCADE-B');
+  return {
+    tenantA: a.tenantId,
+    tenantB: b.tenantId,
+    priorAgencyRuleVersionId,
+    programVersionA: a.programVersionId,
+    programVersionB: b.programVersionId,
+  };
+}
+
+/**
+ * Seed one tenant + program + program_version FK'd to caller-specified ARV.
+ * Skips rule_citation + program_rule per Pitfall PG-9. Per B6: this function
+ * NEVER calls BEGIN/COMMIT/ROLLBACK — caller manages the transaction.
+ *
+ * Per REVIEWS.md B10: program_version year uses realistic synthetic year (2150-2180
+ * range), NOT 7M+ markers that exceed PostgreSQL date bounds.
+ */
+async function seedOneTenantProgramVersionOnly(
+  client: PoolClient,
+  agencyRuleVersionId: string,
+  label: string,
+): Promise<{ tenantId: string; programVersionId: string }> {
+  // tenant (bootstrap pattern: gen_random_uuid → set_config → INSERT).
+  const idResult = await client.query<{ id: string }>(
+    `SELECT gen_random_uuid()::text AS id`,
+  );
+  const tenantId = idResult.rows[0]!.id;
+  await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+  await client.query(
+    `INSERT INTO tenant (id, kind, name) VALUES ($1, 'BROKERAGE', $2)`,
+    [tenantId, `Tenant ${label}`],
+  );
+
+  // program (parent for program_version).
+  const programResult = await client.query<{ id: string }>(
+    `INSERT INTO program (tenant_id, lender, channel, name)
+     VALUES ($1, $2, 'wholesale', $3) RETURNING id::text`,
+    [tenantId, `Cascade Lender ${label}`, `Cascade Test Program ${label}`],
+  );
+  const programId = programResult.rows[0]!.id;
+
+  // program_version FK'd to the caller's prior agency_rule_version.
+  // Per B10: realistic synthetic year in 2150-2180 range (within PostgreSQL date
+  // type bounds; far from real data; collision-free across test reruns).
+  const yr = 2150 + Math.floor(Math.random() * 30);
+  const versionResult = await client.query<{ id: string }>(
+    `INSERT INTO program_version (
+       tenant_id, program_id, agency_rule_version_id,
+       effective_period, state, source_document_fingerprint
+     ) VALUES ($1, $2, $3, $4::daterange, 'active', $5)
+     RETURNING id::text`,
+    [tenantId, programId, agencyRuleVersionId, `[${yr}-01-01,${yr + 1}-01-01)`, `sha256:cascade-${label}`],
+  );
+  const programVersionId = versionResult.rows[0]!.id;
+
+  return { tenantId, programVersionId };
 }
 
 /**
