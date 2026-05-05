@@ -128,10 +128,7 @@ describe('RLS: cross-tenant access on cascade_review_queue (D-19 / AGY-08 / T-3-
         `SELECT id::text FROM cascade_review_queue WHERE id = $1::uuid`,
         [queueRowB],
       );
-      // RED placeholder — RLS should hide tenant B's row from tenant A's
-      // session. Asserting 1 instead of 0 proves the test exercises RLS
-      // (if RLS were broken, the row would be visible). GREEN flips to 0.
-      expect(rows).toHaveLength(1);
+      expect(rows).toHaveLength(0);
 
       await adminClient.query('RESET ROLE');
     } finally {
