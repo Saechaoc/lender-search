@@ -93,19 +93,14 @@ describe('cascade trigger (Phase 3 SC#5 / AGY-08)', () => {
          ORDER BY tenant_id`,
         [newArvId],
       );
-      // RED placeholder — trigger should produce 2 rows; assert 0 to prove
-      // the test exercises the trigger contract end-to-end. GREEN flips to 2.
-      expect(queue).toHaveLength(0);
-      // Locked GREEN assertions (commented during RED):
-      // expect(queue).toHaveLength(2);
-      // for (const row of queue) {
-      //   expect(row.status).toBe('pending');
-      //   expect(row.new_agency_rule_version_id).toBe(newArvId);
-      //   expect(row.prior_agency_rule_version_id).toBe(priorArvId);
-      // }
-      // const tenantIds = queue.map((r) => r.tenant_id).sort();
-      // expect(tenantIds).toEqual([setup.tenantA, setup.tenantB].sort());
-      void setup;
+      expect(queue).toHaveLength(2);
+      for (const row of queue) {
+        expect(row.status).toBe('pending');
+        expect(row.new_agency_rule_version_id).toBe(newArvId);
+        expect(row.prior_agency_rule_version_id).toBe(priorArvId);
+      }
+      const tenantIds = queue.map((r) => r.tenant_id).sort();
+      expect(tenantIds).toEqual([setup.tenantA, setup.tenantB].sort());
     } finally {
       await client.query('ROLLBACK');
       client.release();
@@ -193,9 +188,7 @@ describe('cascade trigger (Phase 3 SC#5 / AGY-08)', () => {
         `SELECT 1 FROM cascade_review_queue WHERE new_agency_rule_version_id = $1`,
         [newArvId],
       );
-      // RED placeholder — Pitfall PG-9 fix should yield exactly 2 rows
-      // (one per program_version, NOT N × ruleCount). GREEN asserts == 2.
-      expect(queue).toHaveLength(0);
+      expect(queue).toHaveLength(2);
     } finally {
       await client.query('ROLLBACK');
       client.release();
