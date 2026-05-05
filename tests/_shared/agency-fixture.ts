@@ -104,9 +104,22 @@ export async function seedAgencyVersion(
     const systemTenantId = await ensureSystemTenant(client);
     await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [systemTenantId]);
 
+    // Phase 3 / Plan 03-01 Task 08 Delta 4 (REVIEWS.md B12) compatibility:
+    // the partial unique index `rule_citation_unique_idx` on
+    // `(tenant_id, citation_hash) WHERE source_url IS NOT NULL` rejects
+    // duplicate INSERTs with the same (tenant_id, source_url, page_number,
+    // excerpt) triple. Multiple test calls to seedAgencyVersion under the
+    // shared SYSTEM tenant with the DEFAULT_CITATION_URL would collide;
+    // ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+    // DO UPDATE returns the existing id (DO NOTHING returns zero rows on
+    // conflict). The WHERE clause is REQUIRED to match the partial index
+    // predicate exactly — Postgres raises 'no unique or exclusion
+    // constraint matching the ON CONFLICT specification' otherwise.
     const cit = await client.query<{ id: string }>(
       `INSERT INTO rule_citation (tenant_id, source_url, excerpt)
        VALUES ($1, $2, $3)
+       ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+       DO UPDATE SET excerpt = EXCLUDED.excerpt
        RETURNING id::text`,
       [systemTenantId, citationSourceUrl, citationExcerpt],
     );

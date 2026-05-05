@@ -35,6 +35,17 @@
  * INSERTs that reference it. Server actions / extraction pipeline emit
  * `INSERT rule_citation RETURNING id` first, then INSERT program_rule with
  * primary_citation_id = $1 inside a single transaction.
+ *
+ * Per Phase 3 / Plan 03-01 Task 08 Delta 4 (REVIEWS.md B12): a GENERATED
+ * STORED column `citation_hash` (md5 of source_url|page_number|excerpt) plus
+ * a partial unique index `rule_citation_unique_idx` on
+ * `(tenant_id, citation_hash) WHERE source_url IS NOT NULL` lands via
+ * --custom migration 0014. The agency seed loader's INSERT path uses
+ * `ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+ * DO UPDATE SET excerpt = EXCLUDED.excerpt RETURNING id` so re-running
+ * `pnpm db:seed` reuses existing citation rows instead of creating
+ * orphan duplicates. Drizzle 0.45 cannot model GENERATED STORED columns
+ * cleanly; the migration is the source of truth for the unique-key shape.
  */
 import { index, integer, jsonb, pgPolicy, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';

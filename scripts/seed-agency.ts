@@ -103,17 +103,23 @@ export async function seedAgencyVersionAndRules(input: SeedAgencyVersionInput): 
     if (existing.rows[0]) {
       arvId = existing.rows[0].id;
     } else {
-      // Wave 0 form: insert agency_rule_version without state / sunset_date /
-      // deprecation_reason. Task 08 Delta 2 adds those columns via migration
-      // 0013 and rewrites this INSERT to thread the optional fields. Keeping
-      // the INSERT minimal here lets Task 04's migration set apply cleanly
-      // and Task 05's verify cycle (pnpm db:seed twice) pass without
-      // blocking on Task 08.
+      // Task 08 Delta 2 (REVIEWS.md B8a): thread state / sunset_date /
+      // deprecation_reason into the INSERT. Defaults are 'ACTIVE' / null / null
+      // when callers omit them. Migration 0013 added the columns; this INSERT
+      // is now safe.
       const created = await client.query<{ id: string }>(
-        `INSERT INTO agency_rule_version (agency, version_label, source_url, effective_period)
-         VALUES ($1, $2, $3, $4::daterange)
+        `INSERT INTO agency_rule_version (agency, version_label, source_url, effective_period, state, sunset_date, deprecation_reason)
+         VALUES ($1, $2, $3, $4::daterange, $5::agency_rule_state, $6::date, $7)
          RETURNING id::text`,
-        [input.agency, input.versionLabel, input.sourceUrl, input.effectivePeriod],
+        [
+          input.agency,
+          input.versionLabel,
+          input.sourceUrl,
+          input.effectivePeriod,
+          input.state ?? 'ACTIVE',
+          input.sunsetDate ?? null,
+          input.deprecationReason ?? null,
+        ],
       );
       arvId = created.rows[0]!.id;
     }
@@ -133,11 +139,24 @@ export async function seedAgencyVersionAndRules(input: SeedAgencyVersionInput): 
       // fixtures already validate at compile time (Pattern P3).
       parseRuleBody(seed.ruleKind as RuleKind, seed.ruleBody);
 
-      // Citation row (URL-only per D-07). Task 08 Delta 4 swaps this to ON CONFLICT
-      // once migration 0014 ships citation_hash + the partial unique index.
+      // Citation row (URL-only per D-07).
+      //
+      // Task 08 Delta 4 (REVIEWS.md B12): use ON CONFLICT (tenant_id,
+      // citation_hash) WHERE source_url IS NOT NULL so re-running pnpm
+      // db:seed reuses existing citation rows instead of creating orphan
+      // duplicates. The DO UPDATE clause is a no-op trick to make
+      // ON CONFLICT also return id (DO NOTHING returns zero rows when the
+      // row already exists). The WHERE clause is REQUIRED — Postgres
+      // demands the conflict_target predicate match the partial unique
+      // index predicate exactly, otherwise it raises:
+      // `there is no unique or exclusion constraint matching the
+      // ON CONFLICT specification`.
       const cit = await client.query<{ id: string }>(
         `INSERT INTO rule_citation (tenant_id, source_url, excerpt)
-         VALUES ($1, $2, $3) RETURNING id::text`,
+         VALUES ($1, $2, $3)
+         ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+         DO UPDATE SET excerpt = EXCLUDED.excerpt
+         RETURNING id::text`,
         [systemTenantId, seed.citation.sourceUrl, seed.citation.excerpt],
       );
       const citationId = cit.rows[0]!.id;

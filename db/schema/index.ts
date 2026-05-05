@@ -20,3 +20,5 @@ export * from './evaluation-event.js';
 export * from './cascade-review-queue.js';
 export * from './conforming-loan-limit-version.js';
 export * from './conforming-loan-limit-county.js';
+// Phase 3 / Plan 03-01 Task 08 Delta 5 (REVIEWS.md A3a) — rule_snapshot bundle store.
+export * from './rule-snapshot.js';
