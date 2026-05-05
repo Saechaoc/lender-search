@@ -139,7 +139,7 @@ Plans:
 - [x] 03-07-PLAN.md — Cascade trigger integration test (D-17 SC#5) + cascade_review_queue cross-tenant pen tests + seedTwoTenantsWithProgramVersions helper
 
 **Wave 3** *(blocked on Wave 2; sequential gate)*
-- [ ] 03-08-PLAN.md — [BLOCKING] Phase 3 integration gate — full reset/migrate/seed/test:rls/test:schema/typecheck/lint cycle + structural state introspection + human-verify checkpoint
+- [x] 03-08-PLAN.md — [BLOCKING] Phase 3 integration gate — full reset/migrate/seed/test:rls/test:schema/typecheck/lint cycle + structural state introspection + human-verify checkpoint
 **UI hint**: no
 
 ### Phase 4: Pure-TS Evaluation Engine

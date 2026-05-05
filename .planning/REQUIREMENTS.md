@@ -28,15 +28,15 @@ Requirements for initial release. Each maps to exactly one roadmap phase below.
 
 ### Agency (AGY) — Phase 0
 
-- [ ] **AGY-01**: System encodes a versioned `agency_rule_version` row per agency release for FNMA, FHLMC, FHA, and VA Selling/Underwriting Guides (USDA scaffolded; full encoding deferred to v2)
-- [ ] **AGY-02**: System encodes the FNMA Selling Guide B3-5.3-07 derogatory waiting-period matrix in full — BK7 (4y / 2y w/ EC), BK13 (2y discharged / 4y dismissed), multi-filing (5y / 7y stacking), foreclosure (7y / 3y w/ EC + 90% LTV cap window), DIL (4y / 2y w/ EC), short sale (4y / 2y w/ EC), mortgage charge-off (4y / 2y w/ EC), modification rule, mortgage-included-in-BK exception
-- [ ] **AGY-03**: System encodes the FHLMC §5202.5 derog waiting-period rules with their own anchor and timing nuances
-- [ ] **AGY-04**: System encodes the FHA HUD 4000.1 derog waiting periods (BK7 2y / 1y w/ extenuating circumstances per HUD 4000.1, foreclosure 3y, DIL/short-sale 3y, mortgage charge-off 3y) with the FHA Back-to-Work program marked `DEPRECATED` with `sunset: 2016-09-30` (Mortgagee Letter 2016-14); standard extenuating-circumstances provision remains active
-- [ ] **AGY-05**: System encodes the VA Pamphlet 26-7 derog waiting periods (BK7 2y / 1y w/ extenuating circumstances, foreclosure 2y, DIL/short-sale 2y, mortgage-included-in-BK exception)
-- [ ] **AGY-06**: System encodes a `program_version → agency_rule_version` foreign-key relationship so every program inherits from a specific dated agency snapshot
-- [ ] **AGY-07**: System polls FNMA Selling Guide / FHLMC Bulletins / FHA Mortgagee Letters / VA Circulars on a daily schedule and creates a draft `agency_rule_version` when a published change is detected
-- [ ] **AGY-08**: System fans out a per-affected-program review job to a queue when a new `agency_rule_version` is committed, so AM can prioritize re-validation of programs whose rules depend on the changed agency rule
-- [ ] **AGY-09**: System encodes 2026 FHFA conforming loan limit values and high-balance county-level overlays as a separate versioned table referenced by `program_version`
+- [x] **AGY-01**: System encodes a versioned `agency_rule_version` row per agency release for FNMA, FHLMC, FHA, and VA Selling/Underwriting Guides (USDA scaffolded; full encoding deferred to v2)
+- [x] **AGY-02**: System encodes the FNMA Selling Guide B3-5.3-07 derogatory waiting-period matrix in full — BK7 (4y / 2y w/ EC), BK13 (2y discharged / 4y dismissed), multi-filing (5y / 7y stacking), foreclosure (7y / 3y w/ EC + 90% LTV cap window), DIL (4y / 2y w/ EC), short sale (4y / 2y w/ EC), mortgage charge-off (4y / 2y w/ EC), modification rule, mortgage-included-in-BK exception
+- [x] **AGY-03**: System encodes the FHLMC §5202.5 derog waiting-period rules with their own anchor and timing nuances
+- [x] **AGY-04**: System encodes the FHA HUD 4000.1 derog waiting periods (BK7 2y / 1y w/ extenuating circumstances per HUD 4000.1, foreclosure 3y, DIL/short-sale 3y, mortgage charge-off 3y) with the FHA Back-to-Work program marked `DEPRECATED` with `sunset: 2016-09-30` (Mortgagee Letter 2016-14); standard extenuating-circumstances provision remains active
+- [x] **AGY-05**: System encodes the VA Pamphlet 26-7 derog waiting periods (BK7 2y / 1y w/ extenuating circumstances, foreclosure 2y, DIL/short-sale 2y, mortgage-included-in-BK exception)
+- [x] **AGY-06**: System encodes a `program_version → agency_rule_version` foreign-key relationship so every program inherits from a specific dated agency snapshot
+- [x] **AGY-07**: System polls FNMA Selling Guide / FHLMC Bulletins / FHA Mortgagee Letters / VA Circulars on a daily schedule and creates a draft `agency_rule_version` when a published change is detected
+- [x] **AGY-08**: System fans out a per-affected-program review job to a queue when a new `agency_rule_version` is committed, so AM can prioritize re-validation of programs whose rules depend on the changed agency rule
+- [x] **AGY-09**: System encodes 2026 FHFA conforming loan limit values and high-balance county-level overlays as a separate versioned table referenced by `program_version`
 
 ### Evaluation engine (EVL) — Phase 0
 
@@ -61,10 +61,10 @@ Requirements for initial release. Each maps to exactly one roadmap phase below.
 
 ### Audit (AUD) — Phase 0
 
-- [ ] **AUD-01**: System persists every evaluation result to an append-only `evaluation_event` table partitioned by month
-- [ ] **AUD-02**: `evaluation_event` records `tenant_id`, `actor_id`, `scenario_payload` (or scenario hash), `ruleset_snapshot_id` (sha256 of canonical bundle at evaluation time), `decision`, `deciding_rule_id`, `rule_stack[]` jsonb, `evaluator_version`, `evaluated_at`
-- [ ] **AUD-03**: `REVOKE UPDATE, DELETE ON evaluation_event FROM authenticated` enforced at the database level — tampering is structurally impossible, not policy-prohibited
-- [ ] **AUD-04**: System replays any historical scenario against its historical `RuleSnapshot` deterministically, returning the same decision and rule stack the user originally saw
+- [x] **AUD-01**: System persists every evaluation result to an append-only `evaluation_event` table partitioned by month
+- [x] **AUD-02**: `evaluation_event` records `tenant_id`, `actor_id`, `scenario_payload` (or scenario hash), `ruleset_snapshot_id` (sha256 of canonical bundle at evaluation time), `decision`, `deciding_rule_id`, `rule_stack[]` jsonb, `evaluator_version`, `evaluated_at`
+- [x] **AUD-03**: `REVOKE UPDATE, DELETE ON evaluation_event FROM authenticated` enforced at the database level — tampering is structurally impossible, not policy-prohibited
+- [x] **AUD-04**: System replays any historical scenario against its historical `RuleSnapshot` deterministically, returning the same decision and rule stack the user originally saw
 
 ### Golden set (GLD) — Phase 0
 
