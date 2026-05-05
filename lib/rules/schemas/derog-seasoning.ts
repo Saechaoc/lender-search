@@ -82,16 +82,44 @@ export const mortgageIncludedInBkRule = z.enum([
   'FC_CLOCK_ALWAYS',
 ]);
 
+/**
+ * Phase 3 / Plan 03-01 Task 08 Delta 6 (REVIEWS.md B9 + iter-2 B4a fix +
+ * plan-checker BLOCKER #3):
+ *
+ *   - `base_waiting_months` is nullable to allow `not_applicable: true`
+ *     sentinel rows (FHA/VA agencies that do not season FORECLOSURE / DIL /
+ *     SHORT_SALE / MORTGAGE_CHARGE_OFF independently of bankruptcy).
+ *   - `not_applicable` is an optional boolean discriminator. When true, the
+ *     row is a sentinel signaling the agency has no separate seasoning rule
+ *     for that event_type (i.e., it inherits from BK7 / BK13 etc.).
+ *   - `_seed_key` is the loader-managed dedupe discriminator (Task 08 Delta 7
+ *     / REVIEWS.md B2). Fixtures should NEVER set this manually; the loader
+ *     injects it from `seedKey ?? event_type` via jsonb_set.
+ *   - Refine: when `not_applicable !== true`, `base_waiting_months` MUST be
+ *     non-null. This guards against accidental nullability in non-sentinel
+ *     rows.
+ */
 export const derogSeasoningSchema = z.object({
   event_type: derogEventType,
   measurement_anchor: measurementAnchor,
-  base_waiting_months: z.number().int().nonnegative(),
+  // Nullable per Task 08 Delta 6 — sentinel rows with not_applicable=true
+  // set base_waiting_months: null. The .refine below enforces that
+  // not_applicable is the ONLY case where null is permitted.
+  base_waiting_months: z.number().int().nonnegative().nullable(),
   extenuating_circumstances_waiting_months: z.number().int().nonnegative().nullable(),
   post_event_LTV_caps: z.array(postEventLtvCap).default([]),
   reestablished_credit_required: z.boolean(),
   reestablishment_criteria_text: z.string().nullable().optional(),
   mortgage_included_in_bk_rule: mortgageIncludedInBkRule,
   notes_citations: z.array(z.string()).default([]),
-});
+  // Task 08 Delta 6: sentinel discriminator (REVIEWS.md B9).
+  not_applicable: z.boolean().optional(),
+  // Task 08 Delta 7: loader-managed dedupe discriminator (REVIEWS.md B2).
+  // Reserved field — fixtures must NOT set this manually.
+  _seed_key: z.string().optional(),
+}).refine(
+  (data) => data.not_applicable === true || data.base_waiting_months !== null,
+  { message: 'base_waiting_months required when not_applicable is not true' },
+);
 
 export type DerogSeasoning = z.infer<typeof derogSeasoningSchema>;

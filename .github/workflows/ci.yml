@@ -111,7 +111,35 @@ jobs:
           pnpm drizzle-kit migrate
           psql -h localhost -U postgres -d lender_search_test -v ON_ERROR_STOP=1 \
             -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;"
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+                -- Phase 3 / Plan 03-01 D-02 maximalist REVOKE: re-apply after the
+                -- blanket GRANT so evaluation_event remains UPDATE/DELETE-denied
+                -- to app_user + system_role. The 0008 migration REVOKES, but the
+                -- ON ALL TABLES IN SCHEMA public GRANT above clobbers it; this
+                -- step closes the gap.
+                REVOKE UPDATE, DELETE ON evaluation_event FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m05 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m05 FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m06 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m06 FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m07 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m07 FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m08 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m08 FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m09 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m09 FROM system_role;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m10 FROM app_user;
+                REVOKE UPDATE, DELETE ON evaluation_event_y2026m10 FROM system_role;"
+
+      # Phase 3 / Plan 03-01 Task 06 (D-06): seed loader runs after migrate so
+      # agency rule rows exist before the schema + RLS suites. The DATABASE_MIGRATION_URL
+      # below is a literal localhost connection string (no GitHub event-context
+      # interpolation), so this step is safe by construction.
+      - name: Run agency seed loader (Phase 3 D-06)
+        env:
+          DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/lender_search_test
+        run: pnpm db:seed
 
       - name: Verify FORCE ROW LEVEL SECURITY is on (TNT-01 gate)
         env:
