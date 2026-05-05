@@ -256,9 +256,12 @@ describe('FHA derog golden snapshot (regression gate / D5 determinism)', () => {
       // Canonical JSON: deep key-sort, no whitespace.
       const canonical = JSON.stringify(sanitized, Object.keys(sanitized[0] ?? {}).sort());
       const hash = createHash('sha256').update(canonical).digest('hex');
-      // PLACEHOLDER — first RED run captures the actual hash; second GREEN
-      // run locks it in. Per Plan 03-04 verbatim acceptance criteria.
-      expect(hash).toBe('__GOLDEN_HASH_PLACEHOLDER__');
+      // GREEN-locked hash captured during first RED run on Plan 03-04.
+      // Mutating any of the 8 HUD-4000.1-2024-08 rule_body shapes (event_type,
+      // measurement_anchor, base_waiting_months, EC months, anchor) flips this
+      // hash and the test fails — that's the regression gate. Bumping requires
+      // an intentional rule-body change paired with a fresh hash capture.
+      expect(hash).toBe('67dbe97368740c3a73e0aaf3513250edde1c884af3b449d5ee86aa3bcbe26a60');
     } finally {
       adminClient.release();
     }
