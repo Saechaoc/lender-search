@@ -41,6 +41,7 @@ import { sql } from 'drizzle-orm';
 import { tenant } from './tenant.js';
 import { program } from './program.js';
 import { agencyRuleVersion } from './agency-rule-version.js';
+import { conformingLoanLimitVersion } from './conforming-loan-limit-version.js';
 import { daterange } from './_types/daterange.js';
 
 export const programVersion = pgTable(
@@ -56,6 +57,12 @@ export const programVersion = pgTable(
     agencyRuleVersionId: uuid('agency_rule_version_id')
       .notNull()
       .references(() => agencyRuleVersion.id),
+    // Phase 3 D-22 / AGY-09: nullable FK to FHFA conforming loan-limit version.
+    // Conforming/conventional programs set this; non-QM/DSCR/jumbo leave NULL.
+    // Phase 4 evaluator dereferences when non-null + scenario hits county-level
+    // loan-amount check.
+    conformingLoanLimitVersionId: uuid('conforming_loan_limit_version_id')
+      .references(() => conformingLoanLimitVersion.id),
     effectivePeriod: daterange('effective_period').notNull(),
     recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
     state: text('state').notNull(),
