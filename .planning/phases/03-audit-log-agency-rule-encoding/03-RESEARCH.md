@@ -1399,7 +1399,10 @@ Alternative: switch the Phase 3 docker image to one that bundles pg_cron (e.g., 
 
 **Source:** Phase 2 02-LEARNINGS.md (Cartesian-join risk in multi-branch CTE). [VERIFIED]
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> **STATUS:** Every open question below was resolved during planning (Phase 3 plans 03-01..08). Each has an inline `RESOLVED:` marker pointing at the plan/decision that resolved it. Retained as historical context.
+
 
 1. **`csv-parse` dep adoption vs hand-rolled (D-23 Claude's Discretion)**
    - What we know: `csv-parse@5.6+` is the standard JS CSV parser; ~5M packages depend; FHFA CSVs use BOM + quoted fields; hand-rolling breaks on Saint Mary's County.
