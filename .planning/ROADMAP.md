@@ -129,10 +129,10 @@ Plans:
 - [x] 03-01-PLAN.md — Shared infra: types + audit/cascade lib + schema migrations (evaluation_event partitioned + REVOKE, cascade_review_queue + trigger, FHFA tables + EXCLUDE, program_version FK delta) + loader skeleton + CI/test wiring
 
 **Wave 1** *(blocked on Wave 0; plans run in parallel)*
-- [ ] 03-02-PLAN.md — FNMA B3-5.3-07 derog matrix (8 event types + golden snapshot); seeds AGY-01 cross-agency test scaffold
-- [ ] 03-03-PLAN.md — FHLMC §5202.5 derog matrix (8 event types incl. FC_CLOCK_ALWAYS + golden snapshot)
-- [ ] 03-04-PLAN.md — FHA HUD 4000.1 derog (7 active types, MULTIPLE_BK skipped per Open Question 5) + Back-to-Work DEPRECATED with sunset 2016-09-30
-- [ ] 03-05-PLAN.md — VA Pamphlet 26-7 derog (7 active types) + completes AGY-01 cross-agency assertions
+- [x] 03-02-PLAN.md — FNMA B3-5.3-07 derog matrix (8 event types + golden snapshot); seeds AGY-01 cross-agency test scaffold
+- [x] 03-03-PLAN.md — FHLMC §5202.5 derog matrix (8 event types incl. FC_CLOCK_ALWAYS + golden snapshot)
+- [x] 03-04-PLAN.md — FHA HUD 4000.1 derog (7 active types, MULTIPLE_BK skipped per Open Question 5) + Back-to-Work DEPRECATED with sunset 2016-09-30
+- [x] 03-05-PLAN.md — VA Pamphlet 26-7 derog (7 active types) + completes AGY-01 cross-agency assertions
 
 **Wave 2** *(blocked on Wave 1; plans run in parallel)*
 - [ ] 03-06-PLAN.md — FHFA 2026 conforming loan limits CSV + csv-parse loader extension + structural / FK / idempotency tests
