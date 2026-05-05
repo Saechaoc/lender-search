@@ -126,7 +126,7 @@ Plans:
 Plans:
 
 **Wave 0** *(blocks all later waves)*
-- [ ] 03-01-PLAN.md — Shared infra: types + audit/cascade lib + schema migrations (evaluation_event partitioned + REVOKE, cascade_review_queue + trigger, FHFA tables + EXCLUDE, program_version FK delta) + loader skeleton + CI/test wiring
+- [x] 03-01-PLAN.md — Shared infra: types + audit/cascade lib + schema migrations (evaluation_event partitioned + REVOKE, cascade_review_queue + trigger, FHFA tables + EXCLUDE, program_version FK delta) + loader skeleton + CI/test wiring
 
 **Wave 1** *(blocked on Wave 0; plans run in parallel)*
 - [ ] 03-02-PLAN.md — FNMA B3-5.3-07 derog matrix (8 event types + golden snapshot); seeds AGY-01 cross-agency test scaffold
