@@ -240,8 +240,9 @@ const fhfaRowSchema = z.object({
  *
  * Per REVIEWS.md B10: open-ended versions are detected via
  *   `upper_inf(effective_period)` — the canonical PostgreSQL daterange function
- *   — NOT `upper(effective_period::text) = 'infinity'` which is fragile text
- *   comparison and breaks if Postgres ever changes the canonical text form.
+ *   — NOT a fragile text-comparison form that casts the daterange to text and
+ *   string-matches the substring 'infinity', which would break if Postgres
+ *   ever changed the canonical text form.
  *
  * Per Open Question 7 + Assumption A5: is_high_cost is computed at load time
  *   as `one_unit_baseline > $832,750` (the FHFA 2026 baseline). Stored, not

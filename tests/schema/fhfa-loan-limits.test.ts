@@ -10,8 +10,8 @@
  *     $832,750 baseline + idempotent re-runs (Open Question 7 / D-23).
  *   - Plan 03-06 / REVIEWS.md B10: open-ended versions detected via
  *     `upper_inf(effective_period)` — the canonical PostgreSQL daterange
- *     function — NOT `upper(effective_period::text) = 'infinity'` text
- *     comparison.
+ *     function — NOT a fragile text-comparison form that casts the daterange
+ *     to text and matches the substring 'infinity'.
  *
  * Per iter-2 REVIEWS B10 fix: tests use realistic year ranges (2090-2199) not
  * synthetic 5,000,000+ values that overflow Postgres's date max (5874897 AD).
@@ -290,6 +290,195 @@ describe('FHFA 2026 loader produces expected row counts (AGY-09)', () => {
       );
       expect(rows.length).toBeGreaterThanOrEqual(1);
       expect(rows[0]?.is_high_cost).toBe(false);
+    } finally {
+      adminClient.release();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Plan 03-06 / Task 03 — FHFA loader idempotency + program_version FK
+// dereference smoke tests (Open Question 1 / D-22 / D-23).
+// ---------------------------------------------------------------------------
+
+describe('FHFA loader idempotency (Open Question 1 / D-23)', () => {
+  it('ON CONFLICT DO NOTHING preserves county row counts on re-INSERT attempt', async () => {
+    // The setup beforeAll hook already ran `pnpm db:seed` (which calls the
+    // loader twice in CI/local typical flow — once at migrate-time, once at
+    // test-setup-time). This test takes one existing seeded county and
+    // attempts a duplicate INSERT with bogus values; the ON CONFLICT
+    // (limit_version_id, county_fips) DO NOTHING clause must reject it
+    // (rowCount=0) AND the original row must remain unchanged.
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows: before } = await adminClient.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )`,
+      );
+      const beforeCount = parseInt(before[0]!.count, 10);
+
+      const { rows: pick } = await adminClient.query<{
+        county_fips: string;
+        state_code: string;
+        one_unit: string;
+        is_high_cost: boolean;
+      }>(
+        `SELECT county_fips, state_code, one_unit_baseline::text AS one_unit, is_high_cost
+         FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )
+         LIMIT 1`,
+      );
+      const sampleFips = pick[0]!.county_fips;
+      const sampleState = pick[0]!.state_code;
+      const originalOneUnit = parseInt(pick[0]!.one_unit, 10);
+      const originalHighCost = pick[0]!.is_high_cost;
+
+      // Attempt to INSERT a "different" row for same (limit_version_id,
+      // county_fips). ON CONFLICT DO NOTHING should leave the original alone.
+      const result = await adminClient.query(
+        `INSERT INTO conforming_loan_limit_county (
+           limit_version_id, county_fips, state_code, one_unit_baseline, is_high_cost
+         )
+         VALUES (
+           (SELECT id FROM conforming_loan_limit_version WHERE year = 2026),
+           $1, $2, 999999, false
+         )
+         ON CONFLICT (limit_version_id, county_fips) DO NOTHING`,
+        [sampleFips, sampleState],
+      );
+      expect(result.rowCount).toBe(0);
+
+      // Row count unchanged.
+      const { rows: after } = await adminClient.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )`,
+      );
+      const afterCount = parseInt(after[0]!.count, 10);
+      expect(afterCount).toBe(beforeCount);
+
+      // Original row preserved (not overwritten with the bogus 999999 value).
+      const { rows: postCheck } = await adminClient.query<{ one_unit: string; is_high_cost: boolean }>(
+        `SELECT one_unit_baseline::text AS one_unit, is_high_cost
+         FROM conforming_loan_limit_county
+         WHERE limit_version_id = (
+           SELECT id FROM conforming_loan_limit_version WHERE year = 2026
+         )
+         AND county_fips = $1`,
+        [sampleFips],
+      );
+      expect(parseInt(postCheck[0]!.one_unit, 10)).toBe(originalOneUnit);
+      expect(postCheck[0]?.is_high_cost).toBe(originalHighCost);
+    } finally {
+      adminClient.release();
+    }
+  });
+});
+
+describe('program_version FK dereference smoke test (AGY-09 / D-22)', () => {
+  it('a program_version row with conforming_loan_limit_version_id set INSERTS successfully + JOINs to year=2026', async () => {
+    // REVIEWS.md B10: realistic synthetic future year 2090 — within
+    // PostgreSQL date type bounds (max = 5874897 AD). We avoid 5,000,000+
+    // markers used in earlier plan iterations because they cause silent
+    // overflow / rejection at the daterange constructor.
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      await adminClient.query('BEGIN');
+
+      const tenant = await adminClient.query<{ id: string }>(
+        `SELECT id::text FROM tenant WHERE kind = 'SYSTEM' LIMIT 1`,
+      );
+      const tenantId = tenant.rows[0]!.id;
+      await adminClient.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+
+      const program = await adminClient.query<{ id: string }>(
+        `INSERT INTO program (tenant_id, lender, channel, name)
+         VALUES ($1, 'FK Test Lender', 'wholesale', 'FK Test Program')
+         RETURNING id::text`,
+        [tenantId],
+      );
+
+      const arv = await adminClient.query<{ id: string }>(
+        `SELECT id::text FROM agency_rule_version
+         WHERE agency = 'FNMA' AND version_label = 'FNMA-SEL-2026-04' LIMIT 1`,
+      );
+      const fhfa = await adminClient.query<{ id: string }>(
+        `SELECT id::text FROM conforming_loan_limit_version WHERE year = 2026 LIMIT 1`,
+      );
+      expect(arv.rows[0]?.id).toBeDefined();
+      expect(fhfa.rows[0]?.id).toBeDefined();
+
+      const pv = await adminClient.query<{ id: string }>(
+        `INSERT INTO program_version (
+           tenant_id, program_id, agency_rule_version_id,
+           conforming_loan_limit_version_id,
+           effective_period, state, source_document_fingerprint
+         ) VALUES ($1, $2, $3, $4, '[2090-01-01,2091-01-01)', 'draft', 'sha256:fk-test')
+         RETURNING id::text`,
+        [tenantId, program.rows[0]!.id, arv.rows[0]!.id, fhfa.rows[0]!.id],
+      );
+      expect(pv.rows[0]!.id).toBeDefined();
+
+      // Dereference the FK back to the year 2026.
+      const { rows: deref } = await adminClient.query<{ year: number }>(
+        `SELECT cllv.year
+         FROM program_version pv
+         JOIN conforming_loan_limit_version cllv ON cllv.id = pv.conforming_loan_limit_version_id
+         WHERE pv.id = $1`,
+        [pv.rows[0]!.id],
+      );
+      expect(deref).toHaveLength(1);
+      expect(deref[0]?.year).toBe(2026);
+
+      await adminClient.query('ROLLBACK');
+    } finally {
+      adminClient.release();
+    }
+  });
+
+  it('a program_version row with conforming_loan_limit_version_id = NULL INSERTS successfully (D-22 nullable)', async () => {
+    // D-22: the FK is nullable so non-QM and non-conforming programs that
+    // never pin to FHFA limits don't need a synthetic version row. REVIEWS.md
+    // B10: realistic future year 2090, NOT 6,000,000.
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      await adminClient.query('BEGIN');
+
+      const tenant = await adminClient.query<{ id: string }>(
+        `SELECT id::text FROM tenant WHERE kind = 'SYSTEM' LIMIT 1`,
+      );
+      const tenantId = tenant.rows[0]!.id;
+      await adminClient.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+
+      const program = await adminClient.query<{ id: string }>(
+        `INSERT INTO program (tenant_id, lender, channel, name)
+         VALUES ($1, 'NQ Lender', 'wholesale', 'Non-QM DSCR')
+         RETURNING id::text`,
+        [tenantId],
+      );
+
+      const arv = await adminClient.query<{ id: string }>(
+        `SELECT id::text FROM agency_rule_version
+         WHERE agency = 'FNMA' AND version_label = 'FNMA-SEL-2026-04' LIMIT 1`,
+      );
+
+      const pv = await adminClient.query<{ id: string; conforming_loan_limit_version_id: string | null }>(
+        `INSERT INTO program_version (
+           tenant_id, program_id, agency_rule_version_id,
+           effective_period, state, source_document_fingerprint
+         ) VALUES ($1, $2, $3, '[2090-01-01,2091-01-01)', 'draft', 'sha256:fk-null')
+         RETURNING id::text, conforming_loan_limit_version_id::text`,
+        [tenantId, program.rows[0]!.id, arv.rows[0]!.id],
+      );
+      expect(pv.rows[0]!.id).toBeDefined();
+      expect(pv.rows[0]!.conforming_loan_limit_version_id).toBeNull();
+
+      await adminClient.query('ROLLBACK');
     } finally {
       adminClient.release();
     }
