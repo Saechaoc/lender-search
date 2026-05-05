@@ -56,7 +56,6 @@ if (!MIGRATION_DB_URL) {
 // propagate from globalSetup → setupFiles. setup.ts ALSO constructs its own
 // __pgAdminPool defensively for the case where the propagation fails.
 declare global {
-  // eslint-disable-next-line no-var
   var __pgAdminPool: Pool;
 }
 

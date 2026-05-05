@@ -17,9 +17,7 @@ loadDotenv({ path: '.env.local' });
 loadDotenv({ path: '.env' });
 
 declare global {
-  // eslint-disable-next-line no-var
   var __pgPool: Pool;
-  // eslint-disable-next-line no-var
   var __pgAdminPool: Pool;
 }
 

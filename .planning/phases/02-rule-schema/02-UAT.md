@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 02-rule-schema
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md]
 started: 2026-05-01T14:33:00Z
-updated: 2026-05-01T15:08:00Z
+updated: 2026-05-04T20:02:00Z
 ---
 
 ## Current Test
@@ -17,14 +17,13 @@ expected: Reset Postgres to pristine state, apply all 7 migrations cleanly. syst
 result: pass
 
 ### 2. Schema Constraint Test Suite
-expected: `pnpm test:schema` passes — citation FK enforcement, EXCLUDE USING gist (program_version + agency_rule_version overlap prevention), program_rule layer CHECK constraint, derog round-trip, detect_loosenings (post CR-01 fix scoping JOIN by event_type), min_confidence GENERATED column (post WR-02 jsonb resilience fix), agency cross-tenant readability. All 86 schema tests green.
-result: issue
-reported: |
-  3 failed | 91 passed (94). Failures all in code-fixer's own work:
-  1. tests/schema/detect-loosenings.test.ts:107 — expected length 1, got 2. CR-01 JOIN scoping by event_type didn't take; overlay BK7 still cross-pairs against FORECLOSURE agency row.
-  2. tests/schema/min-confidence-generated.test.ts:53 — `error: invalid input syntax for type numeric: "true"`. WR-02 jsonb_min_numeric still fails on non-numeric jsonb values (boolean).
-  3. tests/schema/min-confidence-generated.test.ts:72 — same error on jsonb with `true` + string `"high"`. WR-02 resilience fix is incomplete.
-severity: major
+expected: `pnpm test:schema` passes — citation FK enforcement, EXCLUDE USING gist (program_version + agency_rule_version overlap prevention), program_rule layer CHECK constraint, derog round-trip, detect_loosenings (post CR-01 fix scoping JOIN by event_type), min_confidence GENERATED column (post WR-02 jsonb resilience fix), agency cross-tenant readability. All 94 schema tests green.
+result: pass
+verified: 2026-05-04T20:01:00Z
+note: |
+  Initial run on 2026-05-01: 3 failed | 91 passed (CR-01 detect_loosenings + WR-02 jsonb_min_numeric x2). All three reclassified as stale-deployment artifacts of drizzle-kit migration idempotency.
+  - CR-01: resolved 2026-05-01 by replaying db/migrations/0006_detect_loosenings.sql in psql (Test 7 confirms).
+  - WR-02: resolved 2026-05-04 by replaying jsonb_min_numeric body from 0004_program_constraints.sql lines 59–68 in psql. Pre-replay deployed function had no WHERE filter (`pg_get_functiondef` confirmed); post-replay run: 94 passed (94).
 
 ### 3. Zod Rule-Schema Test Suite
 expected: Zod rule_kind schemas pass — 17 schemas, dispatch table exhaustiveness, allow-list defaults (post WR-03), DerogSeasoning + IncomeDocMethod + DscrMethod fixtures, FNMA foreclosure round-trip, geoState overlap test (post WR-04). Note: `pnpm test` script does not exist; tests/rules/ is included in `pnpm test:schema` glob via vitest.schema.config.ts.
@@ -41,14 +40,10 @@ result: pass
 
 ### 6. Lint After Fix Commits
 expected: `pnpm lint` passes with zero errors. Recently-modified files (4 allow-list schemas, detect_loosenings migration, jsonb_min_numeric migration, allow-list-kinds.test.ts, agency-fixture.ts, seedTwoTenants.ts, fixtures/seed.ts) clean.
-result: issue
-reported: |
-  0 errors, 3 warnings — all "Unused eslint-disable directive (no problems were reported from 'no-var')":
-  - tests/rls/global-setup.ts:59
-  - tests/schema/setup.ts:20
-  - tests/schema/setup.ts:22
-  Auto-fixable with `pnpm lint --fix` (or pass --fix flag).
-severity: minor
+result: pass
+verified: 2026-05-04T20:02:00Z
+note: |
+  Initial run reported 3 unused-eslint-disable warnings on `declare global` blocks. Resolved 2026-05-04: ran `pnpm lint --fix`, then manually removed the empty whitespace lines left behind. Post-fix `pnpm lint` is 0 errors / 0 warnings; `pnpm typecheck` still clean.
 
 ### 7. detect_loosenings Returns Expected Output for FNMA Fixture
 expected: After applying migrations, run the FNMA foreclosure fixture seed and call `detect_loosenings(...)` against a stricter agency baseline. Function returns the expected loosening rows (post CR-01 fix: only matches event_type='FORECLOSURE' rows, no Cartesian explosion across event types). Verified via tests/schema/detect-loosenings.test.ts.
@@ -64,14 +59,12 @@ note: |
 ## Summary
 
 total: 7
-passed: 5
-issues: 2
+passed: 7
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
-notes: "Test 2 reported 3 schema failures; Test 7 (run after manual replay of 0006 migration) showed CR-01 was a stale-deployment artifact that resolves once detect_loosenings is re-deployed via CREATE OR REPLACE. Real remaining gaps: WR-02 (jsonb_min_numeric not resilient to non-numeric values, 2 tests still failing) + minor lint cleanup (3 stale eslint-disable directives, auto-fixable)."
-skipped: 0
-blocked: 0
+notes: "All 7 tests pass. Two stale-deployment gaps closed by replaying CREATE OR REPLACE function bodies in psql (CR-01 0006 detect_loosenings on 2026-05-01; WR-02 0004 jsonb_min_numeric on 2026-05-04). Lint cleanup completed 2026-05-04. Final state: pnpm test:schema 94/94, pnpm test:rls 56/56, pnpm typecheck clean, pnpm lint 0/0. Migration-replay protocol gap remains open as a documentation follow-up (see Gaps)."
 
 ## Gaps
 
@@ -94,7 +87,9 @@ blocked: 0
   debug_session: ""
 
 - truth: "jsonb_min_numeric tolerates non-numeric jsonb values (booleans, strings) without raising — returns NULL or skips them per WR-02 spec"
-  status: likely_resolved_by_replay
+  status: resolved_by_replay
+  resolved: 2026-05-04T20:01:00Z
+  resolution_evidence: "Pre-replay `pg_get_functiondef(jsonb_min_numeric)` showed `SELECT MIN((value)::numeric) FROM jsonb_each_text(j)` with no WHERE filter — confirmed stale deployment. Replayed function body from db/migrations/0004_program_constraints.sql lines 59-68 in psql via CREATE OR REPLACE. Post-replay `pnpm test:schema`: 94 passed (94)."
   reason: "Test 2 reported failures at tests/schema/min-confidence-generated.test.ts:53 + :72 both `error: invalid input syntax for type numeric: \"true\"`. Source inspection of db/migrations/0004_program_constraints.sql lines 59–68 confirms the fix IS present: `WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'` filters non-numeric text before the numeric cast in MIN(). 'true' would not match the regex and would be filtered out."
   severity: major
   test: 2
@@ -116,7 +111,9 @@ blocked: 0
   debug_session: ""
 
 - truth: "ESLint runs clean (0 errors, 0 warnings) on tests/ after fix commits"
-  status: failed
+  status: resolved
+  resolved: 2026-05-04T20:02:00Z
+  resolution_evidence: "Ran `pnpm lint --fix` then manually removed the empty whitespace lines it left behind in `declare global` blocks (tests/rls/global-setup.ts:58-60, tests/schema/setup.ts:19-22). Post-fix: `pnpm lint` 0 errors 0 warnings, `pnpm typecheck` clean."
   reason: "User reported 3 warnings — all `Unused eslint-disable directive (no problems were reported from 'no-var')` at tests/rls/global-setup.ts:59, tests/schema/setup.ts:20, tests/schema/setup.ts:22."
   severity: minor
   test: 6
