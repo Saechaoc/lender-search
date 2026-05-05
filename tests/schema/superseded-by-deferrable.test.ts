@@ -29,9 +29,14 @@ describe('agency_rule_version.superseded_by DEFERRABLE FK (B5 / Delta 1)', () =>
 
   it('two-step cascade convention succeeds inside a single transaction', async () => {
     const adminClient = await globalThis.__pgAdminPool.connect();
-    // Use a far-future year to avoid colliding with seeded ARVs / existing
-    // EXCLUDE constraints from prior tests.
-    const yearStart = 2200 + Math.floor(Math.random() * 50);
+    // Phase 3 / Plan 03-02 [Rule 1 - Bug] regression fix: Wave 1 plans seed
+    // real FNMA `[2026-01-01,infinity)` rows; range MUST be anchored
+    // pre-2026 to avoid `agency_rule_version_no_overlap` EXCLUDE collision
+    // (Postgres `daterange &&` says future years overlap with `infinity`).
+    // Picks year [1700..1750] — far below 2026 and disjoint from the
+    // seedAgencyVersion fixture's [800..1499] window so cleanup of the
+    // prior+new pair (DELETE at end of test) doesn't race on collision.
+    const yearStart = 1700 + Math.floor(Math.random() * 50);
     const newId = randomUUID();
     try {
       await adminClient.query('BEGIN');
