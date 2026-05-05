@@ -54,7 +54,11 @@ describe('agency_rule_state enum + columns (B8a / Delta 2)', () => {
 
   it("default state value is 'ACTIVE' on INSERT without state specified", async () => {
     const adminClient = await globalThis.__pgAdminPool.connect();
-    const yr = 2300 + Math.floor(Math.random() * 50);
+    // Phase 3 / Plan 03-02 [Rule 1 - Bug] regression fix: Wave 1 plans seed
+    // real FHLMC `[2026-01-01,infinity)` rows; range MUST be anchored
+    // pre-2026 to avoid `agency_rule_version_no_overlap` EXCLUDE collision
+    // (Postgres `daterange &&` says future years overlap with `infinity`).
+    const yr = 1900 + Math.floor(Math.random() * 50);
     try {
       await adminClient.query('BEGIN');
       const result = await adminClient.query<{ state: string; sunset_date: string | null; deprecation_reason: string | null }>(
