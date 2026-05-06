@@ -1,53 +1,50 @@
 /**
  * lib/audit/snapshot-persistence.ts — RuleSnapshot bundle materialization
- * helpers (Phase 3 / Plan 03-01 Task 08 Delta 5 / REVIEWS.md A3a).
+ * helpers (Phase 3 / Plan 03-01 Task 08 Delta 5 / REVIEWS.md A3a; tenant
+ * scoping applied by quick task 260506-al0 / migration 0022).
  *
- * Public surface:
+ * Public surface (all three REQUIRE tenantId — there is no system-wide
+ * snapshot in Option B; rule_snapshot is per-tenant by schema):
  *   - captureCurrentBundle(client, tenantId): hydrates a CanonicalBundle
- *     from the live rule tables. Returns the SnapshotInput shape (used by
- *     snapshotId) PLUS the per-rule arrays needed for SC#1 deterministic
- *     replay. tenantId scopes program_version + program_rule +
- *     lender_overlay_rule to the requesting tenant; agency tables are
- *     system-owned and read across tenants by design.
- *   - persistSnapshot(client, bundle): materializes the bundle into
- *     rule_snapshot via INSERT ... ON CONFLICT (sha256_hash) DO UPDATE.
- *     Idempotent — same bundle → same id across runs.
- *   - loadSnapshot(client, hash): re-hydrates a CanonicalBundle from
- *     rule_snapshot.content_jsonb for SC#1 deterministic replay.
+ *     from the live rule tables. tenant-scoped tables (program_version,
+ *     program_rule, lender_overlay_rule) are filtered to tenantId; agency
+ *     tables are system-owned and read across tenants by design.
+ *   - persistSnapshot(client, tenantId, bundle): materializes the bundle
+ *     into rule_snapshot via INSERT (tenant_id, sha256_hash, content_jsonb)
+ *     ... ON CONFLICT (tenant_id, sha256_hash) DO UPDATE. Idempotent —
+ *     same tenantId+bundle → same id across runs.
+ *   - loadSnapshot(client, tenantId, hash): re-hydrates a CanonicalBundle
+ *     from rule_snapshot.content_jsonb scoped by (tenant_id, sha256_hash).
  *
  * Phase 4 evaluator's first scenario-replay test asserts the round-trip
- * property: persistSnapshot(content) → loadSnapshot(id) returns the
- * same bundle EVEN IF the live rule tables have been updated since.
+ * property: persistSnapshot(content) → loadSnapshot(id) returns the same
+ * bundle EVEN IF the live rule tables have been updated since.
  *
  * Per Pitfall PG-3: every recorded_at value is normalized to ISO 8601
  * strings (.toISOString()) before snapshotId() is invoked. The hash is
- * computed over the canonical SnapshotInput shape (sorted by id ASC).
+ * computed over the canonical SnapshotInput shape (sorted by id ASC) PLUS
+ * tenantId — see snapshotId.ts for the canonical-input contract.
  *
- * Plan 03 review BL-02: the prior implementation only captured (id,
- * recorded_at) pairs of agency_rule_version / program_version /
- * lender_overlay_rule. That broke SC#1: re-evaluating from content_jsonb
- * required JOINing back to live agency_rule / program_rule / etc. tables
- * to get rule bodies, which means an updated rule body produced a
- * different historical decision for the same evaluation_event. This
- * version captures full agency_rule / program_rule / lender_overlay_rule
- * rows so the evaluator can re-evaluate from the bundle alone.
+ * Plan 03 review BL-02: full agency_rule / program_rule / lender_overlay_rule
+ * rows are captured (not just id+recorded_at refs) so the evaluator can
+ * re-evaluate from the bundle alone. Plan 03 review BL-02 #1: the canonical
+ * bundle keys match the migration 0015 header (agency_rule_versions /
+ * program_rules / lender_overlay_rules). Plan 03 review BL-02 #3: every
+ * nested object passes through sortKeysDeep before JSON.stringify, so future
+ * field additions cannot silently invalidate previously-computed sha256
+ * hashes via V8 iteration order shifts.
  *
- * Plan 03 review BL-02 #1: the canonical bundle keys also drifted from
- * docs (agency_rule_versions/program_rules/lender_overlay_rules) to impl
- * (agency_versions/program_versions/overlay_versions). This version emits
- * the doc-shape keys.
+ * 260506-al0 / Option B: rule_snapshot is now tenant-scoped at the schema
+ * level. The "no-tenantId baseline-system snapshot" branch (WHERE FALSE on
+ * tenant-scoped tables) is gone — every caller must pass tenantId. The
+ * persistSnapshot invariant `bundle.tenantId === tenantId` is in place to
+ * catch future drift where a stale bundle from one tenant might be passed
+ * to persistSnapshot for another (the hash would diverge from the row's
+ * tenant_id and break the (tenant_id, sha256_hash) UNIQUE assumption).
  *
- * Plan 03 review BL-02 #3: every nested object passes through
- * sortKeysDeep before JSON.stringify, so future field additions cannot
- * silently invalidate previously-computed sha256 hashes via V8 iteration
- * order shifts.
- *
- * Plan 03 review BL-01: captureCurrentBundle now requires a tenantId.
- * Tenant-scoped tables (program_version, program_rule, lender_overlay_rule)
- * are filtered by tenant_id in SQL. agency_rule_version + agency_rule are
- * system-owned and captured cross-tenant by design. Rule_snapshot itself is
- * system_role-only readable (migration 0018) so a tenant cannot extract
- * another tenant's program-rule bodies via the snapshot bundle.
+ * Phase 4 evaluator MUST connect as `app_user` with `app.tenant_id` set;
+ * the tenant_isolation policy on rule_snapshot is the wall (NOT a
+ * system_role transition — see migration 0022's header).
  */
 import type { PoolClient } from 'pg';
 import { snapshotId, type SnapshotInput } from './snapshotId.js';
@@ -178,22 +175,24 @@ function dateToIsoString(d: Date | string): string {
  * Hydrate a CanonicalBundle from the live rule tables for `tenantId`.
  *
  * agency_rule_version + agency_rule are system-owned and captured across
- * all rows (no tenant filter required — they are not tenant-scoped). The
+ * all rows (no tenant filter — they have no tenant_id column). The
  * tenant-scoped tables (program_version, program_rule, lender_overlay_rule)
  * are filtered to rows whose tenant_id matches the requesting tenant.
  *
- * BL-01: previously this function had no tenant filter on program_version
- * + lender_overlay_rule, so the resulting bundle leaked references across
- * tenant boundaries when persisted into the world-readable rule_snapshot
- * table. Migration 0018 also tightens the read policy to system_role-only;
- * tenant-scoped rule snapshots will be wired by Phase 4 evaluator (one
- * snapshot per tenant per evaluation).
+ * 260506-al0 / Option B: tenantId is REQUIRED. The previous "WHERE FALSE
+ * when tenantId omitted" branch is gone — Option B made "baseline-system
+ * snapshot with no tenant" incoherent (rule_snapshot.tenant_id is NOT
+ * NULL by schema). Phase 4 evaluator persists per-evaluation snapshots
+ * inline at request time with the requesting tenant's GUC set.
  */
 export async function captureCurrentBundle(
   client: PoolClient,
-  tenantId?: string,
+  tenantId: string,
 ): Promise<CanonicalBundle> {
-  // System-owned tables: agency_rule_version + agency_rule. Capture all rows.
+  // agency_rule_version + agency_rule are SYSTEM-GLOBAL by schema (no
+  // tenant_id column). Every tenant sees the same point-in-time agency
+  // baseline. Do NOT add a tenant filter to these queries — they have no
+  // tenant_id column to filter on.
   const arvRows = await client.query<{
     id: string;
     agency: string;
@@ -216,6 +215,10 @@ export async function captureCurrentBundle(
      FROM agency_rule_version
      ORDER BY id ASC`,
   );
+  // agency_rule_version + agency_rule are SYSTEM-GLOBAL by schema (no
+  // tenant_id column). Every tenant sees the same point-in-time agency
+  // baseline. Do NOT add a tenant filter to these queries — they have no
+  // tenant_id column to filter on.
   const arRows = await client.query<{
     id: string;
     agency_rule_version_id: string;
@@ -231,13 +234,9 @@ export async function captureCurrentBundle(
      ORDER BY id ASC`,
   );
 
-  // Tenant-scoped tables: empty when tenantId omitted (e.g. baseline-system
-  // snapshot from pnpm db:seed where there is no single requesting tenant).
-  // Phase 4 evaluator MUST pass tenantId so program-rule bodies are
-  // captured for replay.
-  const tenantArgs = tenantId ? [tenantId] : [];
-  const tenantClause = tenantId ? 'WHERE tenant_id = $1' : 'WHERE FALSE';
-
+  // Tenant-scoped tables: WHERE tenant_id = $1. Defense-in-depth alongside
+  // the tenant_isolation RLS policies on each of these tables (and on
+  // rule_snapshot itself, post-0022).
   const pvRows = await client.query<{
     id: string;
     tenant_id: string;
@@ -254,9 +253,9 @@ export async function captureCurrentBundle(
             conforming_loan_limit_version_id::text AS conforming_loan_limit_version_id,
             effective_period::text AS effective_period,
             recorded_at, state, source_document_fingerprint
-     FROM program_version ${tenantClause}
+     FROM program_version WHERE tenant_id = $1
      ORDER BY id ASC`,
-    tenantArgs,
+    [tenantId],
   );
   const prRows = await client.query<{
     id: string;
@@ -274,9 +273,9 @@ export async function captureCurrentBundle(
             rule_kind::text, rule_body, field_confidence,
             primary_citation_id::text, extraction_run_id::text AS extraction_run_id,
             created_at
-     FROM program_rule ${tenantClause}
+     FROM program_rule WHERE tenant_id = $1
      ORDER BY id ASC`,
-    tenantArgs,
+    [tenantId],
   );
   const lorRows = await client.query<{
     id: string;
@@ -292,12 +291,15 @@ export async function captureCurrentBundle(
             applies_to_program_id::text AS applies_to_program_id,
             rule_kind::text, rule_body, field_confidence,
             primary_citation_id::text, created_at
-     FROM lender_overlay_rule ${tenantClause}
+     FROM lender_overlay_rule WHERE tenant_id = $1
      ORDER BY id ASC`,
-    tenantArgs,
+    [tenantId],
   );
 
   return {
+    // 260506-al0: tenantId is part of the canonical SnapshotInput shape;
+    // mixed into the snapshotId() hash via snapshotId.ts.
+    tenantId,
     // Legacy SnapshotInput shape (id+recorded_at refs) preserved so callers
     // computing snapshotId(bundle) keep working.
     agencyVersions: arvRows.rows.map((r) => ({
@@ -407,11 +409,18 @@ function canonicalize(bundle: CanonicalBundle): Record<string, unknown> {
 
 /**
  * persistSnapshot — materialize a CanonicalBundle into rule_snapshot.
- * Idempotent via UNIQUE on sha256_hash. Returns the snapshot id + hash.
+ * Idempotent via UNIQUE on (tenant_id, sha256_hash). Returns the snapshot
+ * id + hash.
  *
  * Per REVIEWS.md A3a: this is the canonical write path Phase 4 evaluator
  *   uses immediately before writing evaluation_event so the round-trip
  *   replay path is actually exercised.
+ *
+ * 260506-al0 / Option B: tenantId is REQUIRED. The invariant
+ * `bundle.tenantId === tenantId` is enforced — a stale bundle from
+ * another tenant would otherwise compute a different snapshotId (since
+ * tenantId is in the canonical hash input) than the row's tenant_id,
+ * breaking the (tenant_id, sha256_hash) UNIQUE assumption.
  *
  * The DO UPDATE clause is a no-op trick to make ON CONFLICT also return
  * the existing id; with DO NOTHING the returning clause produces zero
@@ -419,32 +428,45 @@ function canonicalize(bundle: CanonicalBundle): Record<string, unknown> {
  */
 export async function persistSnapshot(
   client: PoolClient,
+  tenantId: string,
   bundle: CanonicalBundle,
 ): Promise<{ id: string; hash: string }> {
+  if (bundle.tenantId !== tenantId) {
+    throw new Error(
+      `persistSnapshot: bundle.tenantId (${bundle.tenantId}) does not match tenantId param (${tenantId}). The hash and the row's tenant_id would diverge.`,
+    );
+  }
   const hash = snapshotId(bundle);
   const canonical = canonicalize(bundle);
   // BL-02 #3: stringify with the sorted-key form so output bytes are stable.
   const bodyJson = JSON.stringify(canonical);
   const { rows } = await client.query<{ id: string }>(
-    `INSERT INTO rule_snapshot (sha256_hash, content_jsonb)
-     VALUES ($1, $2::jsonb)
-     ON CONFLICT (sha256_hash) DO UPDATE SET sha256_hash = EXCLUDED.sha256_hash
+    `INSERT INTO rule_snapshot (tenant_id, sha256_hash, content_jsonb)
+     VALUES ($1, $2, $3::jsonb)
+     ON CONFLICT (tenant_id, sha256_hash) DO UPDATE
+       SET sha256_hash = EXCLUDED.sha256_hash
      RETURNING id::text`,
-    [hash, bodyJson],
+    [tenantId, hash, bodyJson],
   );
   return { id: rows[0]!.id, hash };
 }
 
 /**
- * loadSnapshot — re-hydrate a CanonicalBundle by sha256_hash. Phase 4
- * evaluator uses this for historical scenario replay (SC#1).
+ * loadSnapshot — re-hydrate a CanonicalBundle by (tenant_id, sha256_hash).
+ * Phase 4 evaluator uses this for historical scenario replay (SC#1).
  *
  * Returns null when no row matches. The content_jsonb is parsed back into
  * the CanonicalBundle shape, including the per-rule arrays needed to
  * re-evaluate without reading live rule tables.
+ *
+ * 260506-al0 / Option B: tenantId is REQUIRED. The WHERE clause
+ * (tenant_id = $1 AND sha256_hash = $2) is defense-in-depth alongside
+ * the tenant_isolation policy — even if RLS were bypassed (admin pool
+ * during fixture setup), the filter alone returns zero rows.
  */
 export async function loadSnapshot(
   client: PoolClient,
+  tenantId: string,
   hash: string,
 ): Promise<CanonicalBundle | null> {
   const { rows } = await client.query<{
@@ -457,8 +479,9 @@ export async function loadSnapshot(
       lender_overlay_rules?: BundleLenderOverlayRule[];
     };
   }>(
-    `SELECT content_jsonb FROM rule_snapshot WHERE sha256_hash = $1 LIMIT 1`,
-    [hash],
+    `SELECT content_jsonb FROM rule_snapshot
+     WHERE tenant_id = $1 AND sha256_hash = $2 LIMIT 1`,
+    [tenantId, hash],
   );
   if (!rows[0]) return null;
   const c = rows[0].content_jsonb;
@@ -468,6 +491,9 @@ export async function loadSnapshot(
   const programRuleRows = c.program_rules ?? [];
   const lenderOverlayRuleRows = c.lender_overlay_rules ?? [];
   return {
+    // 260506-al0: tenantId on the rehydrated bundle so callers calling
+    // snapshotId(loaded) recompute the same hash.
+    tenantId,
     // Reconstruct legacy SnapshotInput refs so callers calling
     // snapshotId(loaded) recompute the same hash.
     agencyVersions: agencyRuleVersionRows.map((r) => ({
