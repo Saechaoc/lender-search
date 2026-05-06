@@ -14,12 +14,14 @@
  * updated since the snapshot (rule rotated, version superseded, tenant
  * deleted). A ref list would re-resolve through the live tables and
  * produce a different decision for the same `evaluation_event` on
- * historical replay (SC#1 violation).
+ * historical replay (SC#1 violation). Plan 03 review BL-02 implementation:
+ * lib/audit/snapshot-persistence.ts now actually emits the full per-rule
+ * arrays.
  *
  * Bundle shape (sorted by id ASC for canonical-JSON stability so the sha256
  * is deterministic across processes / DB orderings):
  *   {
- *     "schema_version": 1,
+ *     "schema_version": 2,
  *     "agency_rule_versions": [<full agency_rule_version row>, ...],
  *     "agency_rules":         [<full agency_rule row>, ...],
  *     "program_versions":     [<full program_version row scoped to tenant>, ...],
@@ -27,14 +29,20 @@
  *     "lender_overlay_rules": [<full lender_overlay_rule row>, ...]
  *   }
  *
- * Two-policy shape (mirrors agency_rule_version):
- *   - rule_snapshot_world_read (FOR SELECT TO public USING true)
+ * Two-policy shape:
+ *   - rule_snapshot_system_read (FOR SELECT TO system_role USING true)
+ *     Plan 03 review BL-01: previously rule_snapshot_world_read.
+ *     Tightened to system_role-only because content_jsonb can carry
+ *     tenant-scoped row IDs and (Phase 4+) full rule bodies. World-read
+ *     would be cross-tenant exfiltration via `SELECT content_jsonb`.
  *   - rule_snapshot_system_write (FOR ALL TO system_role USING/WITH CHECK true)
+ *     Phase 4 evaluator runs as system_role for evaluation_event inserts;
+ *     the snapshot read sits in the same role. When tenant-readable
+ *     snapshots are wired (Phase 5+), they need an explicit tenant_id
+ *     column on rule_snapshot AND a per-tenant policy — never wholesale
+ *     world-read.
  *
- * Cross-tenant exposure: the bundle CAN contain tenant-scoped rows
- * (program_version, program_rule) but the WRITER scopes them to the
- * evaluating tenant only. World-read is therefore safe — any tenant can
- * read any snapshot, but the snapshot itself never crosses tenant boundaries.
+ * Migration 0018 makes the policy change at the DDL level.
  */
 import { jsonb, pgPolicy, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -50,10 +58,13 @@ export const ruleSnapshot = pgTable(
   },
   (t) => [
     uniqueIndex('rule_snapshot_sha256_hash_unique').on(t.sha256Hash),
-    pgPolicy('rule_snapshot_world_read', {
+    // Plan 03 review BL-01: system_role-only read instead of world-read.
+    // Tenant-readable snapshots (Phase 5+) need an explicit tenant_id column
+    // and a per-tenant policy, not wholesale public access.
+    pgPolicy('rule_snapshot_system_read', {
       as: 'permissive',
       for: 'select',
-      to: 'public',
+      to: systemRole,
       using: sql`true`,
     }),
     pgPolicy('rule_snapshot_system_write', {

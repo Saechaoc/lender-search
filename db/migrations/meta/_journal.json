@@ -127,6 +127,13 @@
       "when": 1778049700000,
       "tag": "0017_rule_citation_hash_full_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778049800000,
+      "tag": "0018_rule_snapshot_system_read_only",
+      "breakpoints": true
     }
   ]
 }
