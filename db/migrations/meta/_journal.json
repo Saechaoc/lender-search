@@ -120,6 +120,13 @@
       "when": 1778049600000,
       "tag": "0016_rule_citation_excerpt_length_check",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778049700000,
+      "tag": "0017_rule_citation_hash_full_identity",
+      "breakpoints": true
     }
   ]
 }
