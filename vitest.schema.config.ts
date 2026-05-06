@@ -17,6 +17,9 @@ export default defineConfig({
   test: {
     pool: 'forks',
     isolate: true,
+    // Plan 03 review WR-04: pnpm db:seed runs ONCE per invocation
+    // (not per worker fork) to eliminate the parallel-fork seed race.
+    globalSetup: ['./tests/schema/global-setup.ts'],
     setupFiles: ['./tests/schema/setup.ts'],
     sequence: { concurrent: false },
     testTimeout: 10_000,
