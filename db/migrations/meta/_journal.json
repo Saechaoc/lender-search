@@ -134,6 +134,13 @@
       "when": 1778049800000,
       "tag": "0018_rule_snapshot_system_read_only",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778049900000,
+      "tag": "0019_cascade_trigger_security_definer",
+      "breakpoints": true
     }
   ]
 }
