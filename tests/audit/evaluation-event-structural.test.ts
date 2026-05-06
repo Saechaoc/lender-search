@@ -15,7 +15,12 @@
 import { describe, expect, it } from 'vitest';
 
 describe('evaluation_event structural (AUD-01..03 / D-01 / D-02)', () => {
-  it('evaluation_event partitioned: parent + 6 forward partitions exist', async () => {
+  it('evaluation_event partitioned: 0008 inline partitions still present', async () => {
+    // Loosened post-0016 (260505-wp8): IF NOT EXISTS overlap means at least 6
+    // partitions exist — the original 6 from 0008 are a guaranteed subset.
+    // Migration 0016 inline-creates current month + 6 forward, plus the
+    // create_next function ensures current + next month after every cron tick,
+    // so the absolute count is environment-dependent (clock-driven).
     const adminClient = await globalThis.__pgAdminPool.connect();
     try {
       const { rows } = await adminClient.query<{ partition_name: string }>(
@@ -24,15 +29,19 @@ describe('evaluation_event structural (AUD-01..03 / D-01 / D-02)', () => {
          WHERE level > 0
          ORDER BY relid::regclass::text`,
       );
-      expect(rows).toHaveLength(6);
-      expect(rows.map((r) => r.partition_name).sort()).toEqual([
+      expect(rows.length).toBeGreaterThanOrEqual(6);
+      const ORIGINAL_6 = [
         'evaluation_event_y2026m05',
         'evaluation_event_y2026m06',
         'evaluation_event_y2026m07',
         'evaluation_event_y2026m08',
         'evaluation_event_y2026m09',
         'evaluation_event_y2026m10',
-      ]);
+      ];
+      const names = rows.map((r) => r.partition_name);
+      for (const expected of ORIGINAL_6) {
+        expect(names, `${expected} must be present (0008 inline partition)`).toContain(expected);
+      }
     } finally {
       adminClient.release();
     }
