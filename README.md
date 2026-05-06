@@ -1,3 +1,4 @@
+<!-- generated-by: gsd-doc-writer -->
 # Lender Search
 
 Eligibility-first lender/program search tool for mortgage loan officers. Enter a borrower scenario (FICO, LTV, DTI, occupancy, derogatory history, doc type, special situation) and get a ranked list of programs the borrower qualifies for—with explicit reasons for eligibility, near-miss, or ineligibility citing the rule and layer that fired.
@@ -17,18 +18,14 @@ Eligibility-first lender/program search tool for mortgage loan officers. Enter a
 
 ## Quick Start
 
+See [Local Development (Phase 1+)](#local-development-phase-1) below for the full setup, including Postgres provisioning and the RLS pen-test suite.
+
 ```bash
-npm install
-npm start
+pnpm install
+pnpm db:up
+pnpm db:migrate
+pnpm test:rls
 ```
-
-Runs app in development mode at [http://localhost:3000](http://localhost:3000).
-
-### Other Scripts
-
-- `npm test` — Launch test runner in watch mode
-- `npm run build` — Build for production
-- `npm run eject` — Eject from Create React App (one-way operation)
 
 ## Development
 
@@ -59,15 +56,19 @@ For full context, see [PROJECT.md](.planning/PROJECT.md).
 
 ## Stack
 
-- **Frontend**: React 19 (Create React App)
-- **Language**: JavaScript
-- **Build**: Webpack (via CRA)
-- **State**: localStorage (prototype) → planned migration to Supabase or similar
+- **Frontend / API**: Next.js 16.2 (App Router) + React 19.2 — pinned to 16.2.x
+- **Language**: TypeScript 5.7 (strict)
+- **Database**: Postgres 16+ via Supabase
+- **ORM**: Drizzle 0.45 (schema-as-code, `prepare: false` for the Supabase pooler)
+- **Package manager**: pnpm 9 (npm is not supported)
+- **Legacy reference only**: `src/App.js` is a Create React App prototype kept for scenario-form shape; do not extend it
 
 ## Learn More
 
-- [Create React App docs](https://facebook.github.io/create-react-app/docs/getting-started)
-- [React docs](https://reactjs.org/)
+- [Next.js docs](https://nextjs.org/docs)
+- [Drizzle ORM docs](https://orm.drizzle.team/docs/overview)
+- [Supabase docs](https://supabase.com/docs)
+- [React docs](https://react.dev/)
 
 ## Local Development (Phase 1+)
 
@@ -148,3 +149,77 @@ Out of scope (deferred to later phases):
 - Supabase Auth + JWT verification → Phase 6
 - `withTenantContext` request wrapper → Phase 6
 - Inngest worker pool, Sentry, Axiom → Phase 6
+
+## Project Layout
+
+Top-level directories that matter for new contributors:
+
+```
+lender-search/
+├── app/                 Reserved for Next.js App Router routes (empty until Phase 6)
+├── db/
+│   ├── migrations/      Drizzle SQL migrations (0000 → 0006), applied in order
+│   └── schema/          Drizzle table definitions (tenant, program, agency rules, citations)
+├── lib/
+│   ├── db/              Postgres client wrapper (lib/db/client.ts)
+│   ├── env.ts           t3-env runtime validation — boot fails closed on missing vars
+│   ├── rules/schemas/   Per-rule-kind Zod schemas (fico-min, ltv-max, derog-seasoning, etc.)
+│   └── tenant/          setTenantContext primitive at lib/tenant/context.ts
+├── scripts/
+│   └── init-db.sh       Provisions app_user (NOBYPASSRLS) on first Postgres boot
+├── tests/
+│   ├── _shared/         Shared test fixtures (agency-fixture)
+│   ├── rls/             Cross-tenant pen-test suite (D-03 matrix)
+│   ├── rules/           Per-rule-kind schema validation tests
+│   └── schema/          Database constraint tests (FK, EXCLUDE, CHECK, generated columns)
+├── src/                 Legacy CRA prototype (App.js) — reference only, do not extend
+├── docs/                Reserved for generated project docs (currently empty)
+└── .planning/           GSD planning artifacts (PROJECT, ROADMAP, REQUIREMENTS, phases)
+```
+
+Configuration files at the project root:
+- `drizzle.config.ts` — Drizzle Kit configuration (migration directory, schema input)
+- `docker-compose.yml` — Local Postgres 16 service definition
+- `eslint.config.mjs` — Flat-config ESLint rules (blocks `process.env` reads from app paths)
+- `tsconfig.json` — TypeScript strict mode configuration
+- `vitest.config.ts`, `vitest.schema.config.ts`, `vitest.env-boot.config.ts` — Vitest configs per test bucket
+
+## Further Reading
+
+The `.planning/` directory holds the architectural source of truth. New contributors should read these in order:
+
+| Document | Purpose |
+| --- | --- |
+| [.planning/PROJECT.md](.planning/PROJECT.md) | Product mission, target user, scope, KPI gates |
+| [.planning/ROADMAP.md](.planning/ROADMAP.md) | Phase sequencing (Phase 0 → Phase 3) and gate criteria |
+| [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md) | Functional and non-functional requirements |
+| [.planning/research/STACK.md](.planning/research/STACK.md) | Resolved technology stack and rationale |
+| [.planning/research/ARCHITECTURE.md](.planning/research/ARCHITECTURE.md) | Postgres-centric Next.js monolith design |
+| [.planning/research/PITFALLS.md](.planning/research/PITFALLS.md) | Anti-patterns and security guardrails |
+| [.planning/research/FEATURES.md](.planning/research/FEATURES.md) | Feature inventory by phase |
+| [.planning/STATE.md](.planning/STATE.md) | Current phase status and shipped work |
+| [CLAUDE.md](CLAUDE.md) | Agent guidance, conventions, and architectural commitments |
+| [AGENTS.md](AGENTS.md) | GitNexus code-intelligence usage |
+
+A `docs/` directory is reserved for generated project documentation (architecture, getting-started, development, testing, configuration, deployment). Files will be added as later phases produce contributor-facing material.
+
+## Contributing
+
+This is a private, pre-MVP project; external contributions are not accepted at this stage. Internal contributors should follow the GSD workflow:
+
+- Use `/gsd-quick` for small fixes and doc updates.
+- Use `/gsd-debug` for investigation and bug fixing.
+- Use `/gsd-execute-phase` for planned phase work.
+- Do not bypass GSD entry points without an explicit instruction from the project owner.
+
+Every pull request must pass the [PR Gate](#pr-gate-phase-1) checks above. RLS pen-test regressions are treated as security incidents.
+
+A formal `CONTRIBUTING.md` will be added when the project opens to external contributors.
+
+## License
+
+This repository is private and currently has no published license. The `package.json` `private: true` flag prevents accidental publication to npm. A license will be selected before any public release.
+
+## Support
+
+For questions or issues, contact the project maintainer (`chris.saechao@gmail.com`) or open a GitHub issue against this repository. There is no public support channel while the project is pre-MVP.

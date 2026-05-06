@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **lender-search** (453 symbols, 482 relationships, 2 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **lender-search** (1029 symbols, 1136 relationships, 6 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -89,11 +89,12 @@ The project is a from-scratch rebuild. Conventions emerge as code lands; the pro
 - **No client-side secrets.** All LLM calls run server-side via Server Actions or route handlers. The prototype's `localStorage` API-key pattern is excluded by design.
 - **Citation discipline as a hard constraint.** A `program_rule` row cannot persist without a corresponding `rule_citation` row pointing at a source document page + bbox + textSpan. Server-side validation confirms the textSpan actually appears at the cited bbox before the rule lands in staging.
 - **Tenant filtering at the database, never the application.** RLS policies enforce tenancy; "forgot a `WHERE` clause" must be a no-rows-returned bug, not a data-exfiltration incident.
-- **Pure-TS evaluation engine at `lib/eval/`.** No I/O, no framework deps. `evaluate(scenario, snapshot)` is the canonical entry point. The engine is portable: it must be lift-and-shiftable into a separate service if Phase 2 latency demands it without rewriting business logic.
+- **Pure-TS evaluation engine will live at `lib/eval/` (Phase 4+, not yet created).** No I/O, no framework deps. `evaluate(scenario, snapshot)` is the canonical entry point. The engine is portable: it must be lift-and-shiftable into a separate service if Phase 2 latency demands it without rewriting business logic.
 - **Append-only audit log.** `evaluation_event` has `REVOKE UPDATE, DELETE` from the application role enforced at the database level. Never write code that requires mutating an audit row.
 - **Staging schema for extraction.** The pipeline writes only to `staging.draft_rule` / `staging.draft_rule_field_confidence` / `staging.extraction_run`. Canonical tables are mutated only by AM commit transactions.
 - **Bitemporal versioning.** `program_version`, `agency_rule_version`, etc. carry `effective_period` daterange + `expires_at`; `EXCLUDE USING gist` exclusion constraints prevent overlapping active versions.
 - **Cross-tenant data exposure is a release-blocker.** No admin "view as another tenant," no cross-tenant analytics, no aggregated competitive-analytics surface — explicit antitrust posture from the October 2025 Optimal Blue class action.
+- **Migrations are immutable post-merge.** Once a migration file is merged and recorded in `__drizzle_migrations`, fix any defects in a NEW migration (`0007`, `0008`, …). `drizzle-kit migrate` is a no-op for already-applied migrations, so an in-place edit silently leaves the deployed schema/function at the pre-fix version. `CREATE OR REPLACE` and other DDL-idempotent ops are exactly what follow-up migrations are for. Local-dev `psql` replay of a function body is OK while iterating before merge, never as a remediation for a shipped migration.
 
 Detailed patterns and anti-patterns: `.planning/research/ARCHITECTURE.md`, `.planning/research/PITFALLS.md`.
 <!-- GSD:conventions-end -->
@@ -106,7 +107,7 @@ Postgres-centric Next.js monolith with strict separation between the synchronous
 **Components:**
 
 1. **Web frontend (Next.js)** — LO search, results, comparison; AM three-pane review (`react-pdf` + bbox overlay)
-2. **Pure-TS evaluation engine (`lib/eval/`)** — dependency-free, no I/O, takes hydrated `RuleSnapshot` + `Scenario`, returns `{decision, rule_stack, deciding_rule, near_miss}`
+2. **Pure-TS evaluation engine (`lib/eval/`, Phase 4+, not yet created)** — dependency-free, no I/O, takes hydrated `RuleSnapshot` + `Scenario`, returns `{decision, rule_stack, deciding_rule, near_miss}`
 3. **Centralized rule store** — `agency_rule_version` (system-owned) + `program_version` (tenant-scoped, FK to agency version) + `program_rule` (with `layer` enum + per-field confidence) + `rule_citation` (page + bbox + excerpt)
 4. **Staging schema (`staging.*`)** — extraction pipeline never writes canonical tables; AM commit promotes staging → canonical in a single transaction
 5. **Extraction pipeline (Inngest)** — durable multi-step: OCR (Reducto) → structural parse → LLM normalization → overlay diff → confidence scoring; idempotent per step

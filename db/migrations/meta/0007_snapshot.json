@@ -1,0 +1,1774 @@
+{
+  "id": "64205031-fb45-4422-a731-4aa23647581f",
+  "prevId": "06e405f3-c177-40f1-8c96-dea4cbde4fdf",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.tenant": {
+      "name": "tenant",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "tenant_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_self_filter": {
+          "name": "tenant_self_filter",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"tenant\".\"id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"tenant\".\"id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public._rls_canary": {
+      "name": "_rls_canary",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "rls_canary_tenant_idx": {
+          "name": "rls_canary_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "_rls_canary_tenant_id_tenant_id_fk": {
+          "name": "_rls_canary_tenant_id_tenant_id_fk",
+          "tableFrom": "_rls_canary",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "canary_tenant_isolation": {
+          "name": "canary_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"_rls_canary\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"_rls_canary\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rule_citation": {
+      "name": "rule_citation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_pdf_sha256": {
+          "name": "source_pdf_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "page_number": {
+          "name": "page_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bbox": {
+          "name": "bbox",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "excerpt": {
+          "name": "excerpt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secondary_for_rule_id": {
+          "name": "secondary_for_rule_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "rule_citation_tenant_idx": {
+          "name": "rule_citation_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rule_citation_tenant_id_tenant_id_fk": {
+          "name": "rule_citation_tenant_id_tenant_id_fk",
+          "tableFrom": "rule_citation",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "rule_citation_tenant_isolation": {
+          "name": "rule_citation_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"rule_citation\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"rule_citation\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.program": {
+      "name": "program",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lender": {
+          "name": "lender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "program_tenant_idx": {
+          "name": "program_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "program_tenant_id_tenant_id_fk": {
+          "name": "program_tenant_id_tenant_id_fk",
+          "tableFrom": "program",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "program_tenant_isolation": {
+          "name": "program_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"program\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"program\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.program_version": {
+      "name": "program_version",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agency_rule_version_id": {
+          "name": "agency_rule_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "conforming_loan_limit_version_id": {
+          "name": "conforming_loan_limit_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_period": {
+          "name": "effective_period",
+          "type": "daterange",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_document_fingerprint": {
+          "name": "source_document_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eligible_loan_purposes": {
+          "name": "eligible_loan_purposes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_loan_purposes": {
+          "name": "ineligible_loan_purposes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eligible_property_types": {
+          "name": "eligible_property_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_property_types": {
+          "name": "ineligible_property_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eligible_occupancies": {
+          "name": "eligible_occupancies",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_occupancies": {
+          "name": "ineligible_occupancies",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eligible_doc_types": {
+          "name": "eligible_doc_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_doc_types": {
+          "name": "ineligible_doc_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eligible_states": {
+          "name": "eligible_states",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_states": {
+          "name": "ineligible_states",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geo_county_overlay": {
+          "name": "geo_county_overlay",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "program_version_tenant_idx": {
+          "name": "program_version_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "program_version_agency_rule_version_idx": {
+          "name": "program_version_agency_rule_version_idx",
+          "columns": [
+            {
+              "expression": "agency_rule_version_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "program_version_tenant_id_tenant_id_fk": {
+          "name": "program_version_tenant_id_tenant_id_fk",
+          "tableFrom": "program_version",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "program_version_program_id_program_id_fk": {
+          "name": "program_version_program_id_program_id_fk",
+          "tableFrom": "program_version",
+          "tableTo": "program",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "program_version_agency_rule_version_id_agency_rule_version_id_fk": {
+          "name": "program_version_agency_rule_version_id_agency_rule_version_id_fk",
+          "tableFrom": "program_version",
+          "tableTo": "agency_rule_version",
+          "columnsFrom": [
+            "agency_rule_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "program_version_conforming_loan_limit_version_id_conforming_loan_limit_version_id_fk": {
+          "name": "program_version_conforming_loan_limit_version_id_conforming_loan_limit_version_id_fk",
+          "tableFrom": "program_version",
+          "tableTo": "conforming_loan_limit_version",
+          "columnsFrom": [
+            "conforming_loan_limit_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "program_version_tenant_isolation": {
+          "name": "program_version_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"program_version\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"program_version\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.program_rule": {
+      "name": "program_rule",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_version_id": {
+          "name": "program_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "layer": {
+          "name": "layer",
+          "type": "program_rule_layer",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule_kind": {
+          "name": "rule_kind",
+          "type": "rule_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule_body": {
+          "name": "rule_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field_confidence": {
+          "name": "field_confidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "primary_citation_id": {
+          "name": "primary_citation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "extraction_run_id": {
+          "name": "extraction_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "program_rule_tenant_idx": {
+          "name": "program_rule_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "program_rule_version_layer_kind_idx": {
+          "name": "program_rule_version_layer_kind_idx",
+          "columns": [
+            {
+              "expression": "program_version_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "layer",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rule_kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "program_rule_tenant_id_tenant_id_fk": {
+          "name": "program_rule_tenant_id_tenant_id_fk",
+          "tableFrom": "program_rule",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "program_rule_program_version_id_program_version_id_fk": {
+          "name": "program_rule_program_version_id_program_version_id_fk",
+          "tableFrom": "program_rule",
+          "tableTo": "program_version",
+          "columnsFrom": [
+            "program_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "program_rule_primary_citation_id_rule_citation_id_fk": {
+          "name": "program_rule_primary_citation_id_rule_citation_id_fk",
+          "tableFrom": "program_rule",
+          "tableTo": "rule_citation",
+          "columnsFrom": [
+            "primary_citation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "program_rule_tenant_isolation": {
+          "name": "program_rule_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"program_rule\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"program_rule\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.agency_rule_version": {
+      "name": "agency_rule_version",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "agency": {
+          "name": "agency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_label": {
+          "name": "version_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_pdf_sha256": {
+          "name": "source_pdf_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_period": {
+          "name": "effective_period",
+          "type": "daterange",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "superseded_by": {
+          "name": "superseded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "agency_rule_version_agency_idx": {
+          "name": "agency_rule_version_agency_idx",
+          "columns": [
+            {
+              "expression": "agency",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agency_rule_version_superseded_by_agency_rule_version_id_fk": {
+          "name": "agency_rule_version_superseded_by_agency_rule_version_id_fk",
+          "tableFrom": "agency_rule_version",
+          "tableTo": "agency_rule_version",
+          "columnsFrom": [
+            "superseded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "agency_rule_version_world_read": {
+          "name": "agency_rule_version_world_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "true"
+        },
+        "agency_rule_version_system_write": {
+          "name": "agency_rule_version_system_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "system_role"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.agency_rule": {
+      "name": "agency_rule",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "agency_rule_version_id": {
+          "name": "agency_rule_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule_kind": {
+          "name": "rule_kind",
+          "type": "rule_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule_body": {
+          "name": "rule_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field_confidence": {
+          "name": "field_confidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "primary_citation_id": {
+          "name": "primary_citation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "agency_rule_version_kind_idx": {
+          "name": "agency_rule_version_kind_idx",
+          "columns": [
+            {
+              "expression": "agency_rule_version_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rule_kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agency_rule_agency_rule_version_id_agency_rule_version_id_fk": {
+          "name": "agency_rule_agency_rule_version_id_agency_rule_version_id_fk",
+          "tableFrom": "agency_rule",
+          "tableTo": "agency_rule_version",
+          "columnsFrom": [
+            "agency_rule_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "agency_rule_primary_citation_id_rule_citation_id_fk": {
+          "name": "agency_rule_primary_citation_id_rule_citation_id_fk",
+          "tableFrom": "agency_rule",
+          "tableTo": "rule_citation",
+          "columnsFrom": [
+            "primary_citation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "agency_rule_world_read": {
+          "name": "agency_rule_world_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "true"
+        },
+        "agency_rule_system_write": {
+          "name": "agency_rule_system_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "system_role"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lender_overlay_rule": {
+      "name": "lender_overlay_rule",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applies_to_program_id": {
+          "name": "applies_to_program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rule_kind": {
+          "name": "rule_kind",
+          "type": "rule_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule_body": {
+          "name": "rule_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field_confidence": {
+          "name": "field_confidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "primary_citation_id": {
+          "name": "primary_citation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lender_overlay_rule_tenant_idx": {
+          "name": "lender_overlay_rule_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lender_overlay_rule_tenant_id_tenant_id_fk": {
+          "name": "lender_overlay_rule_tenant_id_tenant_id_fk",
+          "tableFrom": "lender_overlay_rule",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lender_overlay_rule_applies_to_program_id_program_id_fk": {
+          "name": "lender_overlay_rule_applies_to_program_id_program_id_fk",
+          "tableFrom": "lender_overlay_rule",
+          "tableTo": "program",
+          "columnsFrom": [
+            "applies_to_program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lender_overlay_rule_primary_citation_id_rule_citation_id_fk": {
+          "name": "lender_overlay_rule_primary_citation_id_rule_citation_id_fk",
+          "tableFrom": "lender_overlay_rule",
+          "tableTo": "rule_citation",
+          "columnsFrom": [
+            "primary_citation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "lender_overlay_rule_tenant_isolation": {
+          "name": "lender_overlay_rule_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"lender_overlay_rule\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"lender_overlay_rule\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.evaluation_event": {
+      "name": "evaluation_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario_hash": {
+          "name": "scenario_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario_payload": {
+          "name": "scenario_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ruleset_snapshot_id": {
+          "name": "ruleset_snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_version_id": {
+          "name": "program_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deciding_rule_id": {
+          "name": "deciding_rule_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deciding_rule_layer": {
+          "name": "deciding_rule_layer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rule_stack": {
+          "name": "rule_stack",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "near_miss_delta": {
+          "name": "near_miss_delta",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evaluator_version": {
+          "name": "evaluator_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evaluated_at": {
+          "name": "evaluated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "evaluation_event_tenant_evaluated_idx": {
+          "name": "evaluation_event_tenant_evaluated_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evaluated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "evaluation_event_tenant_id_tenant_id_fk": {
+          "name": "evaluation_event_tenant_id_tenant_id_fk",
+          "tableFrom": "evaluation_event",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "evaluation_event_program_version_id_program_version_id_fk": {
+          "name": "evaluation_event_program_version_id_program_version_id_fk",
+          "tableFrom": "evaluation_event",
+          "tableTo": "program_version",
+          "columnsFrom": [
+            "program_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "evaluation_event_id_evaluated_at_pk": {
+          "name": "evaluation_event_id_evaluated_at_pk",
+          "columns": [
+            "id",
+            "evaluated_at"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "evaluation_event_tenant_isolation": {
+          "name": "evaluation_event_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"evaluation_event\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"evaluation_event\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {
+        "evaluation_event_decision_check": {
+          "name": "evaluation_event_decision_check",
+          "value": "\"evaluation_event\".\"decision\" IN ('eligible','near_miss','ineligible')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cascade_review_queue": {
+      "name": "cascade_review_queue",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_version_id": {
+          "name": "program_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prior_agency_rule_version_id": {
+          "name": "prior_agency_rule_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_agency_rule_version_id": {
+          "name": "new_agency_rule_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_by": {
+          "name": "claimed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cascade_review_queue_tenant_status_created_idx": {
+          "name": "cascade_review_queue_tenant_status_created_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cascade_review_queue_pending_idx": {
+          "name": "cascade_review_queue_pending_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cascade_review_queue_tenant_id_tenant_id_fk": {
+          "name": "cascade_review_queue_tenant_id_tenant_id_fk",
+          "tableFrom": "cascade_review_queue",
+          "tableTo": "tenant",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cascade_review_queue_program_version_id_program_version_id_fk": {
+          "name": "cascade_review_queue_program_version_id_program_version_id_fk",
+          "tableFrom": "cascade_review_queue",
+          "tableTo": "program_version",
+          "columnsFrom": [
+            "program_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cascade_review_queue_prior_agency_rule_version_id_agency_rule_version_id_fk": {
+          "name": "cascade_review_queue_prior_agency_rule_version_id_agency_rule_version_id_fk",
+          "tableFrom": "cascade_review_queue",
+          "tableTo": "agency_rule_version",
+          "columnsFrom": [
+            "prior_agency_rule_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "cascade_review_queue_new_agency_rule_version_id_agency_rule_version_id_fk": {
+          "name": "cascade_review_queue_new_agency_rule_version_id_agency_rule_version_id_fk",
+          "tableFrom": "cascade_review_queue",
+          "tableTo": "agency_rule_version",
+          "columnsFrom": [
+            "new_agency_rule_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "cascade_review_queue_tenant_isolation": {
+          "name": "cascade_review_queue_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"cascade_review_queue\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid",
+          "withCheck": "\"cascade_review_queue\".\"tenant_id\" = current_setting('app.tenant_id', true)::uuid"
+        },
+        "cascade_review_queue_system_write": {
+          "name": "cascade_review_queue_system_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "system_role"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {
+        "cascade_review_queue_status_check": {
+          "name": "cascade_review_queue_status_check",
+          "value": "\"cascade_review_queue\".\"status\" IN ('pending','claimed','completed','dismissed')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.conforming_loan_limit_version": {
+      "name": "conforming_loan_limit_version",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_period": {
+          "name": "effective_period",
+          "type": "daterange",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_pdf_sha256": {
+          "name": "source_pdf_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "conforming_loan_limit_version_year_idx": {
+          "name": "conforming_loan_limit_version_year_idx",
+          "columns": [
+            {
+              "expression": "year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "conforming_loan_limit_version_world_read": {
+          "name": "conforming_loan_limit_version_world_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "true"
+        },
+        "conforming_loan_limit_version_system_write": {
+          "name": "conforming_loan_limit_version_system_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "system_role"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.conforming_loan_limit_county": {
+      "name": "conforming_loan_limit_county",
+      "schema": "",
+      "columns": {
+        "limit_version_id": {
+          "name": "limit_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "county_fips": {
+          "name": "county_fips",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state_code": {
+          "name": "state_code",
+          "type": "char(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "one_unit_baseline": {
+          "name": "one_unit_baseline",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "two_unit_baseline": {
+          "name": "two_unit_baseline",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "three_unit_baseline": {
+          "name": "three_unit_baseline",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "four_unit_baseline": {
+          "name": "four_unit_baseline",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "one_unit_high_balance": {
+          "name": "one_unit_high_balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_unit_high_balance": {
+          "name": "two_unit_high_balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "three_unit_high_balance": {
+          "name": "three_unit_high_balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "four_unit_high_balance": {
+          "name": "four_unit_high_balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_high_cost": {
+          "name": "is_high_cost",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "conforming_loan_limit_county_limit_version_id_conforming_loan_limit_version_id_fk": {
+          "name": "conforming_loan_limit_county_limit_version_id_conforming_loan_limit_version_id_fk",
+          "tableFrom": "conforming_loan_limit_county",
+          "tableTo": "conforming_loan_limit_version",
+          "columnsFrom": [
+            "limit_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "conforming_loan_limit_county_limit_version_id_county_fips_pk": {
+          "name": "conforming_loan_limit_county_limit_version_id_county_fips_pk",
+          "columns": [
+            "limit_version_id",
+            "county_fips"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "conforming_loan_limit_county_world_read": {
+          "name": "conforming_loan_limit_county_world_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "true"
+        },
+        "conforming_loan_limit_county_system_write": {
+          "name": "conforming_loan_limit_county_system_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "system_role"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.tenant_kind": {
+      "name": "tenant_kind",
+      "schema": "public",
+      "values": [
+        "BROKERAGE",
+        "RETAIL_LENDER",
+        "WHOLESALE_LENDER",
+        "SYSTEM"
+      ]
+    },
+    "public.program_rule_layer": {
+      "name": "program_rule_layer",
+      "schema": "public",
+      "values": [
+        "INVESTOR_OVERLAY",
+        "PRODUCT_FEATURE"
+      ]
+    },
+    "public.rule_kind": {
+      "name": "rule_kind",
+      "schema": "public",
+      "values": [
+        "ltv_max",
+        "cltv_max",
+        "hcltv_max",
+        "fico_min",
+        "dti_max",
+        "reserves_min",
+        "derog_seasoning",
+        "income_doc_method",
+        "dscr_method",
+        "geo_state",
+        "geo_county",
+        "occupancy_allow",
+        "purpose_allow",
+        "property_type_allow",
+        "doc_type_allow",
+        "mi_required",
+        "manual_uw_path"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

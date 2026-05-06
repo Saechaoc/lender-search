@@ -71,12 +71,49 @@ async function ensureSystemTenant(client: PoolClient): Promise<string> {
 /**
  * Generate a randomized non-overlapping daterange so the
  * agency_rule_version_no_overlap EXCLUDE doesn't fire across multiple
- * seeds in a single test run. The wide random window (100k years) makes
- * collisions in long CI runs vanishingly unlikely.
+ * seeds in a single test run.
+ *
+ * Phase 3 / Plan 03-02 [Rule 1 - Bug] regression fix: Wave 1 plans seed
+ * real agency_rule_version rows with `effective_period =
+ * '[2026-01-01,infinity)'`. Postgres daterange `&&` operator says any
+ * future-year range overlaps with `infinity`, so the fixture's prior
+ * `2100..102100` window collided with FNMA-SEL-2026-04 + USDA-SFH and
+ * any other Wave 1 ARV. The fix is to anchor the fixture range to
+ * pre-2026 historical years (year 1000 .. 2024 with a 1-year span);
+ * this keeps the fixture's random ranges non-overlapping among
+ * themselves AND below every real Wave 1 row's start date. Plan 01's
+ * comment that "the SYSTEM tenant accumulates leftover rows across CI
+ * runs" still holds — the historical window is 1024 years wide, and
+ * with 1-year spans the birthday-paradox collision risk for typical
+ * CI runs (≤ 1k seeds) stays well under 1%.
  */
 function makeRandomEffectivePeriod(): string {
-  const startYear = 2100 + Math.floor(Math.random() * 100000);
-  return `[${startYear}-01-01,${startYear + 1}-01-01)`;
+  // Phase 3 / Plan 03-02 [Rule 1 - Bug] regression fix: anchor the random
+  // range pre-2026 (Wave 1 plans seed real `[2026-01-01,infinity)` rows;
+  // anything ≥ 2026-01-01 collides with `infinity` per Postgres
+  // `daterange &&` semantics).
+  //
+  // Use day-level granularity inside a 1024-year pre-2026 window. Each ARV
+  // gets a 1-day range so the collision space is 1024*365 ≈ 374K unique
+  // slots — wide enough for parallel sibling-worktree CI runs without
+  // birthday-paradox collisions. The helper's window stays disjoint from:
+  //   - Plan 03-02 superseded-by-deferrable test's [1700..1750)
+  //   - Plan 03-02 agency-rule-version-exclude test's [1500..1750) and [1800..1900)
+  //   - Plan 03-02 agency-rule-state test's [1900..1950)
+  // (those tests use full-year ranges; the day-level fixture only collides
+  //  if the test happens to pick the same exact day, which is rare and
+  //  the test rolls back anyway).
+  const startYear = 1000 + Math.floor(Math.random() * 1000); // [1000..1999]
+  const dayOfYear = 1 + Math.floor(Math.random() * 364);     // [1..364]
+  // Build YYYY-MM-DD by walking from Jan 1 of startYear forward dayOfYear days.
+  // Use UTC Date to avoid TZ wrap. Use ISO substring extraction.
+  const start = new Date(Date.UTC(startYear, 0, 1));
+  start.setUTCDate(start.getUTCDate() + dayOfYear);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  const startIso = start.toISOString().slice(0, 10);
+  const endIso = end.toISOString().slice(0, 10);
+  return `[${startIso},${endIso})`;
 }
 
 /**
@@ -104,9 +141,22 @@ export async function seedAgencyVersion(
     const systemTenantId = await ensureSystemTenant(client);
     await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [systemTenantId]);
 
+    // Phase 3 / Plan 03-01 Task 08 Delta 4 (REVIEWS.md B12) compatibility:
+    // the partial unique index `rule_citation_unique_idx` on
+    // `(tenant_id, citation_hash) WHERE source_url IS NOT NULL` rejects
+    // duplicate INSERTs with the same (tenant_id, source_url, page_number,
+    // excerpt) triple. Multiple test calls to seedAgencyVersion under the
+    // shared SYSTEM tenant with the DEFAULT_CITATION_URL would collide;
+    // ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+    // DO UPDATE returns the existing id (DO NOTHING returns zero rows on
+    // conflict). The WHERE clause is REQUIRED to match the partial index
+    // predicate exactly — Postgres raises 'no unique or exclusion
+    // constraint matching the ON CONFLICT specification' otherwise.
     const cit = await client.query<{ id: string }>(
       `INSERT INTO rule_citation (tenant_id, source_url, excerpt)
        VALUES ($1, $2, $3)
+       ON CONFLICT (tenant_id, citation_hash) WHERE source_url IS NOT NULL
+       DO UPDATE SET excerpt = EXCLUDED.excerpt
        RETURNING id::text`,
       [systemTenantId, citationSourceUrl, citationExcerpt],
     );

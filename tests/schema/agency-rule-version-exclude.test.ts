@@ -3,15 +3,23 @@
  *
  * Uses random unique year ranges per test so the EXCLUDE doesn't trip on
  * leftover data from prior runs. seedAgencyDerogRule's COMMITted seeds
- * persist across test runs (no truncate); each test picks a year far from
- * the seed pool (3000+/4000+ vs seed pool's 2100+ random).
+ * persist across test runs (no truncate).
+ *
+ * Phase 3 / Plan 03-02 [Rule 1 - Bug] regression fix: Wave 1 plans seed
+ * real agency_rule_version rows with `effective_period =
+ * '[2026-01-01,infinity)'` per CONTEXT D-13. Postgres `daterange &&`
+ * says any future-year range overlaps with `infinity`, so test ranges
+ * MUST be anchored pre-2026 to avoid colliding with the real seed
+ * rows. Picks year [1500..1750] for "blocks overlap" and [1800..1900]
+ * for "different agencies" — each window is wide and disjoint so the
+ * two tests don't collide with each other either.
  */
 import { describe, expect, it } from 'vitest';
 
 describe('agency_rule_version EXCLUDE constraint (D-20.4)', () => {
   it('blocks two overlapping versions for same agency', async () => {
     const adminClient = await globalThis.__pgAdminPool.connect();
-    const yr = 3000000 + Math.floor(Math.random() * 100000);
+    const yr = 1500 + Math.floor(Math.random() * 250);
     try {
       await adminClient.query('BEGIN');
       await adminClient.query(
@@ -37,7 +45,7 @@ describe('agency_rule_version EXCLUDE constraint (D-20.4)', () => {
 
   it('allows overlapping ranges for different agencies', async () => {
     const adminClient = await globalThis.__pgAdminPool.connect();
-    const yr = 4000000 + Math.floor(Math.random() * 100000);
+    const yr = 1800 + Math.floor(Math.random() * 100);
     try {
       await adminClient.query('BEGIN');
       await adminClient.query(

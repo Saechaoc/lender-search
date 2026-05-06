@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: "Phase 02 shipped — PR #2"
-stopped_at: Phase 2 context gathered
-last_updated: "2026-05-05T03:12:56.404Z"
-last_activity: 2026-05-04
+status: "Phase 3 shipped — PR #3 awaiting CI/merge"
+stopped_at: Phase 3 context gathered
+last_updated: "2026-05-06T17:02:43.980Z"
+last_activity: "2026-05-06 -- Phase 3 shipped (PR #3)"
 progress:
   total_phases: 15
-  completed_phases: 2
-  total_plans: 17
-  completed_plans: 17
+  completed_phases: 3
+  total_plans: 25
+  completed_plans: 25
   percent: 100
 ---
 
@@ -25,18 +25,18 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 
 ## Current Position
 
-Phase: 3
+Phase: 4
 Plan: Not started
-Status: Phase 02 shipped — PR #2
-Last activity: 2026-05-04
+Status: Phase 3 shipped — PR #3 awaiting CI/merge
+Last activity: 2026-05-06 -- Phase 3 shipped (PR #3)
 
-Progress: [█░░░░░░░░░] 7% (1/15 phases complete)
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 12
+- Total plans completed: 20
 - Average duration: ~10 min
 - Total execution time: ~29 min
 
@@ -46,6 +46,7 @@ Progress: [█░░░░░░░░░] 7% (1/15 phases complete)
 |-------|-------|-------|----------|
 | 1     | 3     | ~29 min | ~10 min |
 | 02 | 9 | - | - |
+| 03 | 8 | - | - |
 
 **Recent Trend:**
 
@@ -60,6 +61,7 @@ Progress: [█░░░░░░░░░] 7% (1/15 phases complete)
 | Phase 01 P06 | ~6 min | 5 tasks tasks | 6 files files |
 | Phase 01 P07 | ~7 min | 3 tasks tasks | 6 files files |
 | Phase 01 P08 | 6 min | 4 tasks tasks | 8 files files |
+| Phase 03 P08 | 4 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -99,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01-08: Forward-looking ESLint rule pattern — ship the rule before the surface it guards exists, with a smoke fixture (app/.eslint-fixture.ts) that proves the rule fires today via inverted-exit-code lint:fixture script. Phase 6's first app/ PR is auto-gated on no-restricted-properties (process.env) + no-restricted-imports (service-role*/admin-db*) without anyone having to remember to add the rule.
 - [Phase 01]: Plan 01-08: lib/tenant/context.ts uses block-disable @typescript-eslint/no-explicit-any with rationale comment instead of refactoring the PgDatabase<any,any,any> | PgTransaction<any,any,any> union types. The any triplets are a deliberate forward-compat seam (Plan 03 decision: Phase 6's withTenantContext consumes the helper unchanged); refactoring would either narrow the helper to one caller or add three new generic params for no value.
 - [Phase 01]: Plan 01-08: Auto-approval under --auto orchestration — config.workflow.auto_advance=true triggered the auto-approve path for the human-verify checkpoint. Re-ran all 5 Phase 1 must-haves locally (typecheck exit 0; test:rls 27/27 in 657ms; lint exit 0; lint:fixture exit 0 with 2 errors firing; psql introspection t|t for both tables) and captured green output in SUMMARY before continuing. Manual push + watch-CI + intentional-regression demonstration deferred to user discretion post-execution.
+- [Phase ?]: [Phase 03]: Plan 03-08: Phase 3 exit gate GREEN — 259 tests pass; all 16 migrations apply; A1 idempotency proven; 12 REVIEWS blockers + 3 agreed concerns empirically resolved.
+- [Phase ?]: [Phase 03]: Plan 03-08: Cascade probe SQL rewritten as DO block — plan's verbatim CTE form has scoping bug (new_id CTE consumed by UPDATE not visible to subsequent INSERT). Functional outcome identical; saved to scratch/03-08-cascade-probe.sql for replay.
+- [Phase ?]: [Phase 03]: Plan 03-08: Test:schema concurrent-fork race documented in 03-04 + 03-06 SUMMARYs DID NOT manifest in this run — full 197/197 schema suite passed first attempt; documented as known transient flake.
 
 ### Pending Todos
 
@@ -111,6 +116,14 @@ None yet.
 - External expert reviewer for golden set (paid senior underwriter) needs sourcing before Phase 5 enters
 - Plan 01-01 (forward-looking): typescript-eslint@8.46.0 declares peer eslint@^8.57.0||^9.0.0 but pinned eslint@10.2.1 — non-blocking for Plan 01-01 (no lint config exists yet); Plan 08 (CI + ESLint wiring) must choose between bumping typescript-eslint or pinning eslint to 9.x
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260505-rzx | Add migration-immutability convention to CLAUDE.md | 2026-05-06 | e6e9197 | [260505-rzx-add-migration-immutability-convention-to](./quick/260505-rzx-add-migration-immutability-convention-to/) |
+| 260505-wp8 | Fix evaluation_event partition coverage time-bomb (P2.b code review) | 2026-05-06 | c73eb4b | [260505-wp8-fix-evaluation-event-partition-coverage-](./quick/260505-wp8-fix-evaluation-event-partition-coverage-/) |
+| 260506-al0 | Fix P1 cross-tenant rule_snapshot leak — Option B per-tenant scope (migration 0022) | 2026-05-06 | 86ecba6 | [260506-al0-fix-p1-cross-tenant-rule-snapshot-leak-p](./quick/260506-al0-fix-p1-cross-tenant-rule-snapshot-leak-p/) |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
@@ -121,6 +134,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T17:17:14.871Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-rule-schema/02-CONTEXT.md
+Last session: 2026-05-05T22:30:30.746Z
+Stopped at: Phase 3 context gathered
+Resume file: None

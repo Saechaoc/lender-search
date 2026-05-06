@@ -8,6 +8,14 @@
  *
  * Plan 02-07 [BLOCKING] migrate already applied all migrations; this file
  * does NOT run drizzle-kit migrate. It only opens connections.
+ *
+ * Plan 03 review WR-04: `pnpm db:seed` was previously invoked here in
+ * `beforeAll`, which Vitest's `pool: 'forks'` fires once per worker fork.
+ * That spawned 5+ concurrent seed processes racing each other (see
+ * tests/schema/global-setup.ts header comment for failure modes). The seed
+ * has been moved to vitest.schema.config.ts's `globalSetup` so it runs
+ * exactly once per `pnpm test:schema` invocation. This file now opens
+ * connection pools only.
  */
 import { config as loadDotenv } from 'dotenv';
 import { Pool } from 'pg';
