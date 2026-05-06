@@ -59,9 +59,18 @@ async function main(): Promise<void> {
   await pool.end();
 }
 
-main().catch((err) => {
+// Plan 03 review WR-05: previously pool.end() was called as a floating
+// promise immediately followed by process.exit(1). On Node 18+ that closes
+// pg sockets mid-flight before they drain, leaving server-side transactions
+// hanging until Postgres detects the abrupt disconnect. Awaiting the pool
+// close lets pg flush its outstanding queries cleanly. Wrap in try/catch so
+// a pool.end failure cannot mask the original seed failure.
+main().catch(async (err) => {
   console.error('seed-agency failed:', err);
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  pool.end();
+  try {
+    await pool.end();
+  } catch (closeErr) {
+    console.error('pool close also failed:', closeErr);
+  }
   process.exit(1);
 });
