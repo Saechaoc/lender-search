@@ -23,6 +23,24 @@
  * rule_snapshot.sha256_hash via DEFERRABLE INITIALLY DEFERRED in
  * --custom migration 0015. Drizzle 0.45 cannot model DEFERRABLE FK; the
  * migration is the source of truth.
+ *
+ * Plan 03 review BL-04: this declaration USED to claim
+ * `index('...').on(t.tenantId, t.evaluatedAt)` (ascending) while migration
+ * 0008 recreates it as `(tenant_id, evaluated_at DESC)`. The index on disk
+ * was correct but the schema source lied — the next `drizzle-kit generate`
+ * would emit a spurious migration converting the index back to ascending,
+ * silently degrading partition pruning behavior on
+ * `ORDER BY evaluated_at DESC LIMIT N` recency scans.
+ *
+ * Fix: explicitly call `.desc()` on the indexed column so the schema source
+ * matches the on-disk DDL. The remaining drift (PARTITION BY, FORCE RLS,
+ * REVOKE, DEFERRABLE FK to rule_snapshot) cannot be modelled in Drizzle
+ * 0.45 — those properties live ONLY in the --custom migrations and the
+ * comment block above documents the override authoritatively. A future
+ * `drizzle-kit generate` will still treat this table as non-partitioned —
+ * the agreed convention is that any 0017+ migration touching
+ * evaluation_event must be reviewed against this comment + 0008 to ensure
+ * the partition / RLS / REVOKE properties are reapplied.
  */
 import { check, index, jsonb, pgPolicy, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -49,7 +67,9 @@ export const evaluationEvent = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.id, t.evaluatedAt] }),
-    index('evaluation_event_tenant_evaluated_idx').on(t.tenantId, t.evaluatedAt),
+    // Plan 03 review BL-04: explicit .desc() on evaluatedAt so the schema
+    // source matches migration 0008's `(tenant_id, evaluated_at DESC)` index.
+    index('evaluation_event_tenant_evaluated_idx').on(t.tenantId, t.evaluatedAt.desc()),
     check('evaluation_event_decision_check', sql`${t.decision} IN ('eligible','near_miss','ineligible')`),
     pgPolicy('evaluation_event_tenant_isolation', {
       as: 'permissive',

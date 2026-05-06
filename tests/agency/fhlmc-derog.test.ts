@@ -128,11 +128,16 @@ describe('FHLMC derog matrix (Phase 3 SC#3 / AGY-03)', () => {
       const hash = createHash('sha256')
         .update(JSON.stringify(sortedBodies))
         .digest('hex');
-      // Golden snapshot regression hash. Locked-in during the GREEN phase of
-      // Plan 03-03 Task 3 (TDD-Phase: green). If this assertion fails, an edit
-      // to lib/agency-seeds/fhlmc/derog-seasoning.ts has changed the seeded
-      // bundle — re-run, inspect the diff, and bump the hash deliberately.
-      expect(hash).toBe('e69f8f8cecbe18b699a194ca8286a87638bb6fa5f8b7ab020f9dc91134febb2e');
+      // Golden snapshot regression hash. Bumped Plan 03 review BL-03 fix:
+      // FHLMC BK13_DISCHARGED + BK13_DISMISSED now cite distinct anchors
+      // (#BK_CHAPTER_13_DISCHARGED / #BK_CHAPTER_13_DISMISSED) instead of
+      // both pointing at #BK_CHAPTER_13. The notes_citations array values
+      // changed accordingly, flipping this hash. Originally locked during
+      // Plan 03-03 Task 3 GREEN at 'e69f8f8c...febb2e'. If this assertion
+      // fails again, an edit to lib/agency-seeds/fhlmc/derog-seasoning.ts
+      // has changed the seeded bundle — re-run, inspect the diff, and bump
+      // the hash deliberately.
+      expect(hash).toBe('64a87b54b4fe810d4f325a17fb3a9afc7e2adb0f68cc7a61d7875c9b1a82fd98');
     } finally {
       adminClient.release();
     }

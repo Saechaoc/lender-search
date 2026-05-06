@@ -67,7 +67,10 @@ export const fhlmcDerogSeasoningSeeds: AgencyRuleSeed<DerogSeasoning>[] = [
       notes_citations: ['SSG-5202.5#BK_CHAPTER_13'],
     },
     citation: {
-      sourceUrl: `${FHLMC_CITATION_BASE}#BK_CHAPTER_13`,
+      // Plan 03 review BL-03: anchor is distinct from BK13_DISMISSED's
+      // (#BK_CHAPTER_13_DISMISSED) so the citation_hash differs even when
+      // the page_number/bbox are NULL. Mirrors the FNMA pattern.
+      sourceUrl: `${FHLMC_CITATION_BASE}#BK_CHAPTER_13_DISCHARGED`,
       excerpt:
         'Bankruptcy (Chapter 13): A two-year waiting period is permitted, measured from the discharge date.',
     },
@@ -84,10 +87,12 @@ export const fhlmcDerogSeasoningSeeds: AgencyRuleSeed<DerogSeasoning>[] = [
       reestablished_credit_required: true,
       reestablishment_criteria_text: null,
       mortgage_included_in_bk_rule: 'NOT_APPLICABLE',
-      notes_citations: ['SSG-5202.5#BK_CHAPTER_13'],
+      notes_citations: ['SSG-5202.5#BK_CHAPTER_13_DISMISSED'],
     },
     citation: {
-      sourceUrl: `${FHLMC_CITATION_BASE}#BK_CHAPTER_13`,
+      // Plan 03 review BL-03: distinct anchor from BK13_DISCHARGED's
+      // (#BK_CHAPTER_13_DISCHARGED). See note above.
+      sourceUrl: `${FHLMC_CITATION_BASE}#BK_CHAPTER_13_DISMISSED`,
       excerpt:
         'Bankruptcy (Chapter 13): A four-year waiting period is required, measured from the dismissal date. A two-year waiting period is permitted with documented extenuating circumstances.',
     },

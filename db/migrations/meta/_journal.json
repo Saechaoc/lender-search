@@ -1,125 +1,160 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1777558801968,
-      "tag": "0000_initial",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1777559100645,
-      "tag": "0001_force_rls",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1777577670312,
-      "tag": "0002_program_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1777577686880,
-      "tag": "0003_force_rls_program",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1777577734817,
-      "tag": "0004_program_constraints",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1777578313271,
-      "tag": "0005_force_rls_agency",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1777578328190,
-      "tag": "0006_detect_loosenings",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1778014655475,
-      "tag": "0007_phase3_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1778014746100,
-      "tag": "0008_evaluation_event_partitioned",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1778014746200,
-      "tag": "0009_evaluation_event_pg_cron",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1778014746300,
-      "tag": "0010_cascade_review_queue",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1778014746400,
-      "tag": "0011_conforming_loan_limit",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1778014746500,
-      "tag": "0012_program_version_conforming_fk",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1778014746600,
-      "tag": "0013_agency_rule_state_and_deferrable_fk",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1778014746700,
-      "tag": "0014_rule_citation_unique_key",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1778014746800,
-      "tag": "0015_rule_snapshot",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1778014746900,
-      "tag": "0016_evaluation_event_partition_backfill",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1777558801968,
+			"tag": "0000_initial",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1777559100645,
+			"tag": "0001_force_rls",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1777577670312,
+			"tag": "0002_program_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1777577686880,
+			"tag": "0003_force_rls_program",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1777577734817,
+			"tag": "0004_program_constraints",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1777578313271,
+			"tag": "0005_force_rls_agency",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1777578328190,
+			"tag": "0006_detect_loosenings",
+			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1778014655475,
+			"tag": "0007_phase3_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1778014746100,
+			"tag": "0008_evaluation_event_partitioned",
+			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1778014746200,
+			"tag": "0009_evaluation_event_pg_cron",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1778014746300,
+			"tag": "0010_cascade_review_queue",
+			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "7",
+			"when": 1778014746400,
+			"tag": "0011_conforming_loan_limit",
+			"breakpoints": true
+		},
+		{
+			"idx": 12,
+			"version": "7",
+			"when": 1778014746500,
+			"tag": "0012_program_version_conforming_fk",
+			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "7",
+			"when": 1778014746600,
+			"tag": "0013_agency_rule_state_and_deferrable_fk",
+			"breakpoints": true
+		},
+		{
+			"idx": 14,
+			"version": "7",
+			"when": 1778014746700,
+			"tag": "0014_rule_citation_unique_key",
+			"breakpoints": true
+		},
+		{
+			"idx": 15,
+			"version": "7",
+			"when": 1778014746800,
+			"tag": "0015_rule_snapshot",
+			"breakpoints": true
+		},
+		{
+			"idx": 16,
+			"version": "7",
+			"when": 1778014746900,
+			"tag": "0016_evaluation_event_partition_backfill",
+			"breakpoints": true
+		},
+		{
+			"idx": 17,
+			"version": "7",
+			"when": 1778049600000,
+			"tag": "0017_rule_citation_excerpt_length_check",
+			"breakpoints": true
+		},
+		{
+			"idx": 18,
+			"version": "7",
+			"when": 1778049700000,
+			"tag": "0018_rule_citation_hash_full_identity",
+			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "7",
+			"when": 1778049800000,
+			"tag": "0019_rule_snapshot_system_read_only",
+			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "7",
+			"when": 1778049900000,
+			"tag": "0020_cascade_trigger_security_definer",
+			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1778050000000,
+			"tag": "0021_force_rls_phase3_gaps",
+			"breakpoints": true
+		}
+	]
 }

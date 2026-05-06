@@ -39,4 +39,37 @@ describe('snapshotId determinism contract (AUD-04 / D-04)', () => {
     const result = snapshotId({ agencyVersions: [sampleA], programVersions: [], overlayVersions: [] });
     expect(result).toMatch(/^[0-9a-f]{64}$/);
   });
+
+  // Plan 03 review WR-09: recorded_at must match the strict ISO 8601 with-millis
+  // shape so hand-built strings missing millis cannot produce a different hash
+  // for the same logical timestamp.
+  it('A5: rejects non-ISO-8601-with-millis recorded_at (no millis)', () => {
+    expect(() =>
+      snapshotId({
+        agencyVersions: [{ id: sampleA.id, recorded_at: '2026-01-01T00:00:00Z' }],
+        programVersions: [],
+        overlayVersions: [],
+      }),
+    ).toThrow(/recorded_at must match/);
+  });
+
+  it('A5: rejects non-ISO-8601-with-millis recorded_at (no Z suffix)', () => {
+    expect(() =>
+      snapshotId({
+        agencyVersions: [],
+        programVersions: [{ id: sampleB.id, recorded_at: '2026-01-01T00:00:00.000' }],
+        overlayVersions: [],
+      }),
+    ).toThrow(/recorded_at must match/);
+  });
+
+  it('A5: rejects non-ISO-8601-with-millis recorded_at in overlayVersions', () => {
+    expect(() =>
+      snapshotId({
+        agencyVersions: [],
+        programVersions: [],
+        overlayVersions: [{ id: sampleC.id, recorded_at: 'not-a-date' }],
+      }),
+    ).toThrow(/recorded_at must match/);
+  });
 });

@@ -8,6 +8,14 @@
  *
  * Plan 02-07 [BLOCKING] migrate already applied all migrations; this file
  * does NOT run drizzle-kit migrate. It only opens connections.
+ *
+ * Plan 03 review WR-04: `pnpm db:seed` was previously invoked here in
+ * `beforeAll`, which Vitest's `pool: 'forks'` fires once per worker fork.
+ * That spawned 5+ concurrent seed processes racing each other (see
+ * tests/schema/global-setup.ts header comment for failure modes). The seed
+ * has been moved to vitest.schema.config.ts's `globalSetup` so it runs
+ * exactly once per `pnpm test:schema` invocation. This file now opens
+ * connection pools only.
  */
 import { config as loadDotenv } from 'dotenv';
 import { Pool } from 'pg';
@@ -43,24 +51,6 @@ beforeAll(async () => {
     connectionString: ADMIN_URL,
     max: 3,
   });
-
-  // Phase 3 / D-06: ensure agency seeds + FHFA loan limits are loaded.
-  // Idempotent (ON CONFLICT DO NOTHING / INSERT WHERE NOT EXISTS) so
-  // re-running across test suites is a structural no-op when state is
-  // current. The schema test suite runs after rls (per package.json
-  // script ordering) but vitest.schema.config.ts has no globalSetup;
-  // calling here defensively keeps the suite self-contained.
-  const { execFileSync } = await import('node:child_process');
-  try {
-    execFileSync('pnpm', ['db:seed'], {
-      stdio: 'inherit',
-      env: { ...process.env, DATABASE_MIGRATION_URL: ADMIN_URL },
-    });
-  } catch (err) {
-    throw new Error(
-      `tests/schema setup: pnpm db:seed failed. Original: ${(err as Error).message}`,
-    );
-  }
 });
 
 afterAll(async () => {

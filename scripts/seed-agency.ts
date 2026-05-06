@@ -37,7 +37,7 @@ import { parse } from 'csv-parse/sync';
 import { Pool, type PoolClient } from 'pg';
 import { z } from 'zod';
 import { parseRuleBody, type RuleKind } from '../lib/rules/schemas/index.js';
-import type { AgencyRuleSeed } from '../lib/agency-seeds/types.js';
+import { agencyRuleSeedCitationSchema, type AgencyRuleSeed } from '../lib/agency-seeds/types.js';
 
 loadDotenv({ path: '.env.local' });
 loadDotenv({ path: '.env' });
@@ -137,6 +137,13 @@ export async function seedAgencyVersionAndRules(input: SeedAgencyVersionInput): 
       if (!URL_GATE.test(seed.citation.sourceUrl)) {
         throw new Error(`Citation URL violates ^https?:// gate: ${seed.citation.sourceUrl}`);
       }
+
+      // Plan 03 review WR-02: Zod-validate the citation shape (sourceUrl
+      // structurally valid, excerpt ≤500 chars) before INSERT. The DB-level
+      // CHECK constraint (migration 0016) is the structural backstop; this
+      // gives a typed error message at the load site rather than a Postgres
+      // SQLSTATE 23514 surfacing in the seed run.
+      agencyRuleSeedCitationSchema.parse(seed.citation);
 
       // Defense-in-depth: Zod validate every seed at load time even though
       // fixtures already validate at compile time (Pattern P3).
@@ -271,17 +278,46 @@ export async function seedFhfaYear(year: number, csvPath: string): Promise<void>
   try {
     await client.query('BEGIN');
 
+    // Plan 03 review WR-03: assert the connection role has system_role
+    // membership BEFORE running the close-prior-versions UPDATE. Without
+    // system_role membership the UPDATE silently affects zero rows
+    // (conforming_loan_limit_version has system_role write policy +
+    // FORCE RLS via migration 0020), which leaves prior versions
+    // open-ended and lets the next INSERT collide on the EXCLUDE
+    // constraint. Surfacing the role mismatch here is much cheaper to
+    // diagnose than chasing the EXCLUDE collision.
+    const roleCheck = await client.query<{ is_system_role: boolean }>(
+      `SELECT pg_has_role(current_user, 'system_role', 'MEMBER') AS is_system_role`,
+    );
+    if (!roleCheck.rows[0]?.is_system_role) {
+      throw new Error(
+        `seedFhfaYear: connection role ${'`'}${`current_user`}${'`'} lacks system_role ` +
+          `membership. Use DATABASE_MIGRATION_URL (postgres) — not DATABASE_URL ` +
+          `(app_user) — when invoking the FHFA seeder.`,
+      );
+    }
+
     // D-23 two-step daterange close convention: when this loader runs for year
     // N, any prior open-ended version (year < N) is closed at [its-lower,
     // ${year}-01-01). REVIEWS.md B10 — use upper_inf() instead of fragile text
     // comparison.
-    await client.query(
+    //
+    // WR-03: capture rowCount + RETURNING year so a silent zero-row close
+    // (caused by RLS rejecting the UPDATE under an unexpected role) is
+    // visible in the seed log instead of silently leaving prior versions
+    // open-ended.
+    const closed = await client.query<{ year: number }>(
       `UPDATE conforming_loan_limit_version
          SET effective_period = daterange(lower(effective_period), $1::date, '[)')
        WHERE upper_inf(effective_period)
-         AND year < $2`,
+         AND year < $2
+       RETURNING year`,
       [`${year}-01-01`, year],
     );
+    if (closed.rowCount && closed.rowCount > 0) {
+      const closedYears = closed.rows.map((r) => r.year).join(', ');
+      console.log(`seedFhfaYear(${year}): closed ${closed.rowCount} prior open-ended versions: ${closedYears}`);
+    }
 
     // Get-or-create version row keyed on year. The EXCLUDE constraint enforces
     // year-uniqueness over overlapping effective_periods, so a duplicate
