@@ -94,6 +94,7 @@ The project is a from-scratch rebuild. Conventions emerge as code lands; the pro
 - **Staging schema for extraction.** The pipeline writes only to `staging.draft_rule` / `staging.draft_rule_field_confidence` / `staging.extraction_run`. Canonical tables are mutated only by AM commit transactions.
 - **Bitemporal versioning.** `program_version`, `agency_rule_version`, etc. carry `effective_period` daterange + `expires_at`; `EXCLUDE USING gist` exclusion constraints prevent overlapping active versions.
 - **Cross-tenant data exposure is a release-blocker.** No admin "view as another tenant," no cross-tenant analytics, no aggregated competitive-analytics surface — explicit antitrust posture from the October 2025 Optimal Blue class action.
+- **Migrations are immutable post-merge.** Once a migration file is merged and recorded in `__drizzle_migrations`, fix any defects in a NEW migration (`0007`, `0008`, …). `drizzle-kit migrate` is a no-op for already-applied migrations, so an in-place edit silently leaves the deployed schema/function at the pre-fix version. `CREATE OR REPLACE` and other DDL-idempotent ops are exactly what follow-up migrations are for. Local-dev `psql` replay of a function body is OK while iterating before merge, never as a remediation for a shipped migration.
 
 Detailed patterns and anti-patterns: `.planning/research/ARCHITECTURE.md`, `.planning/research/PITFALLS.md`.
 <!-- GSD:conventions-end -->
