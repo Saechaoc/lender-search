@@ -6,19 +6,30 @@
  *   - Each child has a *_tenant_isolation policy
  *   - The create_next_evaluation_event_partition() function applies RLS+FORCE
  *     to a synthetically-created future partition
+ *
+ * 260505-wp8: CHILDREN is now dynamic (was a static May-Oct 2026 list) so the
+ * tests cover every partition created by 0008 + 0016 + future migrations.
  */
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
-const CHILDREN = [
-  'evaluation_event_y2026m05',
-  'evaluation_event_y2026m06',
-  'evaluation_event_y2026m07',
-  'evaluation_event_y2026m08',
-  'evaluation_event_y2026m09',
-  'evaluation_event_y2026m10',
-];
+let CHILDREN: string[] = [];
 
 describe('evaluation_event child partition RLS+FORCE (B7b / Delta 3)', () => {
+  beforeAll(async () => {
+    const adminClient = await globalThis.__pgAdminPool.connect();
+    try {
+      const { rows } = await adminClient.query<{ partition_name: string }>(
+        `SELECT relid::regclass::text AS partition_name
+         FROM pg_partition_tree('evaluation_event'::regclass)
+         WHERE level > 0
+         ORDER BY relid::regclass::text`,
+      );
+      CHILDREN = rows.map((r) => r.partition_name);
+    } finally {
+      adminClient.release();
+    }
+  });
+
   it('parent has RLS+FORCE', async () => {
     const adminClient = await globalThis.__pgAdminPool.connect();
     try {
