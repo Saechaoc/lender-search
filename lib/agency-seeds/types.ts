@@ -18,13 +18,24 @@
  * State/sunset/deprecation per Task 08 Delta 2 (REVIEWS.md B8a fix) live
  *   on `SeedAgencyVersionInput` rather than here because they belong to the
  *   `agency_rule_version` row, not the per-rule body.
+ *
+ * Plan 03 review WR-02: agencyRuleSeedCitationSchema enforces the same ≤500
+ *   char excerpt cap that migration 0016 lands at the DB layer. Zod runs
+ *   first inside the loader so a fixture with an over-cap excerpt fails fast
+ *   with a structured error rather than as a Postgres CHECK violation.
  */
+import { z } from 'zod';
 import type { RuleKind } from '../rules/schemas/index.js';
 
-export interface AgencyRuleSeedCitation {
-  sourceUrl: string;
-  excerpt: string;
-}
+// WR-02: ≤500 char cap mirrors migration 0016's CHECK constraint.
+// Source URL is a structurally valid http(s) URL — defense-in-depth
+// alongside the loader's URL_GATE regex (see scripts/seed-agency.ts).
+export const agencyRuleSeedCitationSchema = z.object({
+  sourceUrl: z.string().url(),
+  excerpt: z.string().min(1).max(500),
+});
+
+export type AgencyRuleSeedCitation = z.infer<typeof agencyRuleSeedCitationSchema>;
 
 export interface AgencyRuleSeed<TBody = unknown> {
   versionLabel: string;

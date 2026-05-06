@@ -113,6 +113,13 @@
       "when": 1778014746800,
       "tag": "0015_rule_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1778049600000,
+      "tag": "0016_rule_citation_excerpt_length_check",
+      "breakpoints": true
     }
   ]
 }

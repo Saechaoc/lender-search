@@ -37,7 +37,7 @@ import { parse } from 'csv-parse/sync';
 import { Pool, type PoolClient } from 'pg';
 import { z } from 'zod';
 import { parseRuleBody, type RuleKind } from '../lib/rules/schemas/index.js';
-import type { AgencyRuleSeed } from '../lib/agency-seeds/types.js';
+import { agencyRuleSeedCitationSchema, type AgencyRuleSeed } from '../lib/agency-seeds/types.js';
 
 loadDotenv({ path: '.env.local' });
 loadDotenv({ path: '.env' });
@@ -137,6 +137,13 @@ export async function seedAgencyVersionAndRules(input: SeedAgencyVersionInput): 
       if (!URL_GATE.test(seed.citation.sourceUrl)) {
         throw new Error(`Citation URL violates ^https?:// gate: ${seed.citation.sourceUrl}`);
       }
+
+      // Plan 03 review WR-02: Zod-validate the citation shape (sourceUrl
+      // structurally valid, excerpt ≤500 chars) before INSERT. The DB-level
+      // CHECK constraint (migration 0016) is the structural backstop; this
+      // gives a typed error message at the load site rather than a Postgres
+      // SQLSTATE 23514 surfacing in the seed run.
+      agencyRuleSeedCitationSchema.parse(seed.citation);
 
       // Defense-in-depth: Zod validate every seed at load time even though
       // fixtures already validate at compile time (Pattern P3).
