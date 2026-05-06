@@ -39,6 +39,15 @@ export interface VersionRef {
 }
 
 export interface SnapshotInput {
+  // 260506-al0 / Option B: tenantId is now part of the canonical hash input.
+  // Tenant-scoped UUIDs in programVersionRows / overlayVersions already make
+  // collisions structurally impossible by-construction (UUID v4 namespace
+  // separation). Mixing tenantId at the schema level is the explicit
+  // guarantee that survives any future regression — if a code path ever
+  // forgot to filter by tenant_id, this layer still hashes differently for
+  // bundles from different tenants, so an evaluation_event row referencing
+  // a hash from another tenant cannot collide with our own.
+  tenantId: string;
   agencyVersions: VersionRef[];
   programVersions: VersionRef[];
   overlayVersions: VersionRef[];
@@ -64,6 +73,14 @@ export function snapshotId(input: SnapshotInput): string {
   for (const v of input.overlayVersions) assertIso8601('overlayVersions', v.recorded_at);
 
   const canonical = {
+    // 260506-al0 / Option B: tenant_id is mixed into the canonical hash
+    // input alongside the version-ref arrays. Sister-tenant bundles whose
+    // bodies happened to be byte-identical at the version-ref layer (e.g.
+    // both empty, both pointing at the same system-owned agency refs)
+    // would otherwise collide on hash. Mixing tenantId at this layer is
+    // the structural guarantee that an evaluation_event row referencing
+    // a hash from another tenant cannot match our own.
+    tenant_id: input.tenantId,
     agency_versions: [...input.agencyVersions]
       .map((v) => ({ id: v.id, recorded_at: v.recorded_at }))
       .sort((a, b) => a.id.localeCompare(b.id)),
@@ -80,6 +97,8 @@ export function snapshotId(input: SnapshotInput): string {
   // when JSON.stringify recurses. Listing every key the canonical shape can
   // contain is required because the replacer is applied uniformly at every
   // depth of the tree.
-  const keysToEmit = ['agency_versions', 'overlay_versions', 'program_versions', 'id', 'recorded_at'];
+  // 260506-al0: 'tenant_id' added to the emit set so the new canonical key
+  // actually serializes through the replacer.
+  const keysToEmit = ['agency_versions', 'id', 'overlay_versions', 'program_versions', 'recorded_at', 'tenant_id'];
   return createHash('sha256').update(JSON.stringify(canonical, keysToEmit)).digest('hex');
 }
