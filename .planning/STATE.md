@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 Phase: 4
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-05-06 - Completed quick task 260505-wp8: Fix evaluation_event partition coverage time-bomb (P2.b)
+Last activity: 2026-05-06 - Completed quick task 260506-al0: Fix P1 cross-tenant rule_snapshot leak (Option B, per-tenant scope)
 
 Progress: [██████████] 100%
 
@@ -122,6 +122,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260505-rzx | Add migration-immutability convention to CLAUDE.md | 2026-05-06 | e6e9197 | [260505-rzx-add-migration-immutability-convention-to](./quick/260505-rzx-add-migration-immutability-convention-to/) |
 | 260505-wp8 | Fix evaluation_event partition coverage time-bomb (P2.b code review) | 2026-05-06 | c73eb4b | [260505-wp8-fix-evaluation-event-partition-coverage-](./quick/260505-wp8-fix-evaluation-event-partition-coverage-/) |
+| 260506-al0 | Fix P1 cross-tenant rule_snapshot leak — Option B per-tenant scope (migration 0022) | 2026-05-06 | 86ecba6 | [260506-al0-fix-p1-cross-tenant-rule-snapshot-leak-p](./quick/260506-al0-fix-p1-cross-tenant-rule-snapshot-leak-p/) |
 
 ## Deferred Items
 
