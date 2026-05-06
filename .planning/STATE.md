@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 Phase: 4
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-05-06
+Last activity: 2026-05-06 - Completed quick task 260505-rzx: Add migration-immutability convention to CLAUDE.md
 
 Progress: [██████████] 100%
 
@@ -115,6 +115,12 @@ None yet.
 - Reducto vendor lock pending Phase 5 acceptance test (≥95% cell accuracy on 10 non-QM matrices) or consensus-pass mitigation
 - External expert reviewer for golden set (paid senior underwriter) needs sourcing before Phase 5 enters
 - Plan 01-01 (forward-looking): typescript-eslint@8.46.0 declares peer eslint@^8.57.0||^9.0.0 but pinned eslint@10.2.1 — non-blocking for Plan 01-01 (no lint config exists yet); Plan 08 (CI + ESLint wiring) must choose between bumping typescript-eslint or pinning eslint to 9.x
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260505-rzx | Add migration-immutability convention to CLAUDE.md | 2026-05-06 | e6e9197 | [260505-rzx-add-migration-immutability-convention-to](./quick/260505-rzx-add-migration-immutability-convention-to/) |
 
 ## Deferred Items
 
