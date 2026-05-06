@@ -60,7 +60,9 @@ findings:
   warning: 9
   info: 6
   total: 19
-status: issues_found
+status: resolved
+resolved_at: 2026-05-06
+resolved_by: REVIEW-FIX.md (commit `0ae72c1` + 13 fix commits + merge `a12cb3b`)
 ---
 
 # Phase 3: Code Review Report
