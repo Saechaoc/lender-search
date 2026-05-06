@@ -41,3 +41,6 @@ out/
 
 # pnpm
 .pnpm-store/
+
+# JetBrains IDEs
+.idea/
