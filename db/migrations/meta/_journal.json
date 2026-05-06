@@ -141,6 +141,13 @@
       "when": 1778049900000,
       "tag": "0019_cascade_trigger_security_definer",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778050000000,
+      "tag": "0020_force_rls_phase3_gaps",
+      "breakpoints": true
     }
   ]
 }
